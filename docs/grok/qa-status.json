@@ -1,0 +1,31 @@
+{
+  "role": "independent-qa",
+  "status": "BLOCKED",
+  "blocker": "Automatic approval review rejected project-document egress to Grok and notification to listener; explicit approval in this chat is required.",
+  "model_requested": "grok-4.7",
+  "model_confirmed": null,
+  "reasoning_effort_requested": "xhigh",
+  "session_uuid": null,
+  "started_at": null,
+  "ended_at": null,
+  "exit_code": null,
+  "updated_at": "2026-10-12T23:14:21.1034783+08:00",
+  "timezone": "Australia/Perth",
+  "grok_started": false,
+  "grok_review_completed": false,
+  "local_functional_tests": "NOT_RUN",
+  "browser_used": false,
+  "prompt_path": ".local/orchestration/qa/prompt.txt",
+  "input_manifest_path": ".local/orchestration/qa/input-manifest.json",
+  "review_path": "docs/grok/qa-review.md",
+  "notification_status": "BLOCKED_BY_AUTO_REVIEW_NOT_SENT",
+  "listener_thread_id": "01a130a8-52e9-74c2-abf5-92c883bcc001",
+  "source_authorization_read": true,
+  "source_thread_id": "01a13054-dfbc-7823-947a-a52e7a88fa33",
+  "source_user_message_id": "01a130a1-ff08-7603-a76c-8771f899b944",
+  "approval_rejections": [
+    "Grok execution rejected before process creation: private project document egress authorization not accepted.",
+    "Listener notification rejected before process creation: source-thread approval not accepted."
+  ],
+  "required_approval": "Allow the prepared QA project materials to be sent to local Grok CLI grok-4.7 and results/blockers to the designated listener chat."
+}

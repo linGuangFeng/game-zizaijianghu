@@ -1,0 +1,14 @@
+{
+  "exit_code": null,
+  "ended_at": null,
+  "recorded_at": "2026-10-12T23:12:17.5863864+08:00",
+  "reasoning_effort": "xhigh",
+  "reason": "Automatic approval rejected transmitting project documents and screenshot to Grok: trusted authorization for payload and destination required.",
+  "status": "BLOCKED_APPROVAL",
+  "model": "grok-4.7",
+  "grok_invoked": false,
+  "notification": "sent: 01a130a8-52e9-74c2-abf5-92c883bcc001; evidence: .local/orchestration/requirements/notify-blocked-response.json",
+  "role": "requirements-review",
+  "started_at": null,
+  "session_id": null
+}

@@ -1,0 +1,15 @@
+{
+  "started_at": null,
+  "exit_code": null,
+  "reason": "Automatic approval rejected disclosure of project documents to external Grok; explicit authorization required.",
+  "ended_at": null,
+  "notification": "delivered_to_01a130a8-52e9-74c2-abf5-92c883bcc001",
+  "status": "BLOCKED_APPROVAL",
+  "role": "server-review",
+  "reasoning_requested": "xhigh",
+  "model_requested": "grok-4.7",
+  "grok_invoked": false,
+  "updated_at": "2026-10-12T23:12:17.5055573+08:00",
+  "node_version": "v22.17.0",
+  "session_uuid": null
+}

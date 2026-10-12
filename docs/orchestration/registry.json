@@ -1,0 +1,49 @@
+{
+  "projectId": "a3693f59-787b-49c0-a95c-e75c32d20da8",
+  "model": "grok-4.7",
+  "modelVerified": "grok models: logged in with grok.com; available 4.7,4.7-build-fast,4.6,4.5",
+  "coordinator": {
+    "threadId": "01a13054-dfbc-7823-947a-a52e7a88fa33",
+    "hostId": "local"
+  },
+  "heartbeat": {
+    "intervalHours": 5,
+    "targetThreadId": "01a130a8-52e9-74c2-abf5-92c883bcc001",
+    "status": "ACTIVE",
+    "id": "grok-5"
+  },
+  "listener": {
+    "threadId": "01a130a8-52e9-74c2-abf5-92c883bcc001",
+    "hostId": "local"
+  },
+  "status": "COORDINATION_CONFIGURED_WORKERS_BLOCKED",
+  "workers": [
+    {
+      "role": "requirements",
+      "title": "自在江湖｜Grok需求与视觉",
+      "threadId": "01a130aa-095e-7440-b1a5-b0b25399761a",
+      "statusFile": "docs/grok/requirements-status.json",
+      "hostId": "local",
+      "status": "BLOCKED_APPROVAL",
+      "model": "grok-4.7"
+    },
+    {
+      "role": "server",
+      "title": "自在江湖｜Grok服务端与架构",
+      "threadId": "01a130aa-190b-7d50-b0c1-fcefdcb2f3a9",
+      "statusFile": "docs/grok/server-status.json",
+      "hostId": "local",
+      "status": "BLOCKED_APPROVAL",
+      "model": "grok-4.7"
+    },
+    {
+      "role": "qa",
+      "title": "自在江湖｜Grok独立测试",
+      "threadId": "01a130aa-264b-77c1-9547-33ce7f98ab07",
+      "statusFile": "docs/grok/qa-status.json",
+      "hostId": "local",
+      "status": "BLOCKED_APPROVAL",
+      "model": "grok-4.7"
+    }
+  ]
+}

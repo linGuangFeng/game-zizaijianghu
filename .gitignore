@@ -19,3 +19,5 @@ test-results/
 .idea/
 .DS_Store
 Thumbs.db
+# Local orchestration requests and raw model logs
+.local/
