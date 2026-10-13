@@ -12,15 +12,17 @@ export class MartialStateError extends Error {
 }
 
 export async function createMartialStore({ file, checkpoint, character }) {
-  if (checkpoint !== undefined && checkpoint !== 'observed-before-equip') {
+  const checkpoints = ['observed-before-equip', 'observed-event1-before-equip'];
+  if (checkpoint !== undefined && !checkpoints.includes(checkpoint)) {
     throw new Error('Unknown local martial checkpoint.');
   }
   let saved = null;
   try {
     saved = JSON.parse(await readFile(file, 'utf8'));
-    if (saved === null || saved.checkpoint !== 'observed-before-equip'
-      || !isCharacter(saved.character) || typeof saved.equipped !== 'boolean'
-      || typeof saved.taskComplete !== 'boolean') {
+    const validState = saved?.checkpoint === 'observed-before-equip'
+      ? typeof saved.equipped === 'boolean' && typeof saved.taskComplete === 'boolean'
+      : saved?.checkpoint === 'observed-event1-before-equip' && typeof saved.twoEquipped === 'boolean';
+    if (!validState || !isCharacter(saved.character)) {
       throw new Error('Invalid local martial save.');
     }
   } catch (error) {
@@ -40,9 +42,11 @@ export async function createMartialStore({ file, checkpoint, character }) {
   }
 
   // Opt-in initialization happens only at startup, never in a GET request.
-  if (saved === null && checkpoint === 'observed-before-equip') {
+  if (saved === null && checkpoint !== undefined) {
     if (character === null) throw new Error('Create a local character before starting the observed martial checkpoint.');
-    await persist({ checkpoint, character: { ...character }, equipped: false, taskComplete: false });
+    const initial = checkpoint === 'observed-event1-before-equip'
+      ? { twoEquipped: false } : { equipped: false, taskComplete: false };
+    await persist({ checkpoint, character: { ...character }, ...initial });
   }
 
   function stateFor(currentCharacter) {
@@ -50,6 +54,21 @@ export async function createMartialStore({ file, checkpoint, character }) {
     if (saved === null) throw new MartialStateError(404, 'martial_checkpoint_not_initialized');
     if (saved.character.name !== currentCharacter.name || saved.character.appearanceId !== currentCharacter.appearanceId) {
       throw new MartialStateError(409, 'martial_checkpoint_character_mismatch');
+    }
+    if (saved.checkpoint === 'observed-event1-before-equip') {
+      const ownedIds = saved.twoEquipped
+        ? ['ruwu-sword-reference', 'uppercut-reference']
+        : ['uppercut-reference', 'ruwu-sword-reference'];
+      const assigned = saved.twoEquipped ? ownedIds : ['uppercut-reference'];
+      return {
+        kind: 'local-martial-checkpoint',
+        checkpoint: saved.checkpoint,
+        owned: ownedIds.map((id) => ({ id, level: 1 })),
+        slots: [1, 2, 3, 4, 5, 6].map((position) => ({
+          position, skillId: assigned[position - 1] ?? null, locked: position >= 4,
+        })),
+        task: { id: 'event1-reference', label: '通关江湖事件1', current: 1, target: 1 },
+      };
     }
     return {
       kind: 'local-martial-checkpoint',
@@ -66,6 +85,12 @@ export async function createMartialStore({ file, checkpoint, character }) {
     const operation = queue.then(async () => {
       const character = getCharacter();
       const state = stateFor(character);
+      if (saved.checkpoint === 'observed-event1-before-equip') {
+        if (!equipped) throw new MartialStateError(409, 'martial_action_not_observed');
+        if (saved.twoEquipped) return state;
+        await persist({ ...saved, twoEquipped: true });
+        return stateFor(character);
+      }
       const taskComplete = saved.taskComplete || equipped;
       if (saved.equipped === equipped && saved.taskComplete === taskComplete) return state;
       await persist({ ...saved, equipped, taskComplete });

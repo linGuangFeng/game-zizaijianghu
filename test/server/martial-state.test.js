@@ -107,7 +107,7 @@ test('changed character reports mismatch without silently resetting the checkpoi
 async function processServer(t, options, seed) {
   const env = { ...process.env, PORT: '0', CHARACTER_SAVE_FILE: options.saveFile, MARTIAL_SAVE_FILE: options.martialSaveFile };
   delete env.MARTIAL_CHECKPOINT;
-  if (seed) env.MARTIAL_CHECKPOINT = checkpoint;
+  if (seed) env.MARTIAL_CHECKPOINT = typeof seed === 'string' ? seed : checkpoint;
   const child = spawn(process.execPath, [fileURLToPath(new URL('../../server/index.js', import.meta.url))], {
     env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,
   });
@@ -229,4 +229,88 @@ test('unequip cannot create a checkpoint for an ordinary character', async (t) =
   assert.equal(response.status, 404);
   assert.deepEqual(await response.json(), { error: 'martial_checkpoint_not_initialized' });
   await assert.rejects(access(options.martialSaveFile), { code: 'ENOENT' });
+});
+const eventCheckpoint = 'observed-event1-before-equip';
+test('event-one checkpoint maps the two observed skills and list order without altering task or character', async (t) => {
+  const options = await fixture(t);
+  const role = await readFile(options.saveFile, 'utf8');
+  const base = await start(t, { ...options, martialCheckpoint: eventCheckpoint });
+  const before = (await getState(base)).state;
+  assert.equal(before.checkpoint, eventCheckpoint);
+  assert.deepEqual(before.owned, [{ id: 'uppercut-reference', level: 1 }, { id: 'ruwu-sword-reference', level: 1 }]);
+  assert.deepEqual(before.slots.map((slot) => slot.skillId), ['uppercut-reference', null, null, null, null, null]);
+  assert.deepEqual(before.task, { id: 'event1-reference', label: '通关江湖事件1', current: 1, target: 1 });
+  const after = (await (await equip(base)).json()).state;
+  assert.deepEqual(after.owned, [{ id: 'ruwu-sword-reference', level: 1 }, { id: 'uppercut-reference', level: 1 }]);
+  assert.deepEqual(after.slots.map((slot) => slot.skillId), ['ruwu-sword-reference', 'uppercut-reference', null, null, null, null]);
+  assert.deepEqual(after.slots.map((slot) => slot.locked), [false, false, false, true, true, true]);
+  assert.deepEqual(after.task, before.task);
+  const bytes = await readFile(options.martialSaveFile, 'utf8');
+  assert.deepEqual(await (await equip(base)).json(), { state: after });
+  assert.equal(await readFile(options.martialSaveFile, 'utf8'), bytes);
+  assert.equal(await readFile(options.saveFile, 'utf8'), role);
+  assert.equal((await (await fetch(`${base}/api/reference/martial-catalog`)).json()).entries.length, 1);
+});
+
+test('two-skill checkpoint refuses unequip before and after equip and survives process restart', async (t) => {
+  const options = await fixture(t);
+  const first = await processServer(t, options, eventCheckpoint);
+  for (const apply of [false, true]) {
+    if (apply) await equip(first.base);
+    const before = await getState(first.base);
+    const bytes = await readFile(options.martialSaveFile, 'utf8');
+    const response = await fetch(`${first.base}/api/martial-state/unequip`, { method: 'POST' });
+    assert.equal(response.status, 409);
+    assert.deepEqual(await response.json(), { error: 'martial_action_not_observed' });
+    assert.deepEqual(await getState(first.base), before);
+    assert.equal(await readFile(options.martialSaveFile, 'utf8'), bytes);
+  }
+  const equipped = await getState(first.base);
+  await first.stop();
+  const second = await processServer(t, options, false);
+  assert.deepEqual(await getState(second.base), equipped);
+});
+
+test('two-skill write failure preserves the observed pre-equip state and original files', async (t) => {
+  const options = await fixture(t);
+  const base = await start(t, { ...options, martialCheckpoint: eventCheckpoint });
+  const before = await getState(base);
+  const bytes = await readFile(options.martialSaveFile, 'utf8');
+  const role = await readFile(options.saveFile, 'utf8');
+  const backup = `${options.martialSaveFile}.backup`;
+  await rename(options.martialSaveFile, backup);
+  await mkdir(options.martialSaveFile);
+  assert.equal((await equip(base)).status, 500);
+  assert.deepEqual(await getState(base), before);
+  assert.equal(await readFile(backup, 'utf8'), bytes);
+  assert.equal(await readFile(options.saveFile, 'utf8'), role);
+  await rm(options.martialSaveFile, { recursive: true });
+  await rename(backup, options.martialSaveFile);
+  assert.equal((await equip(base)).status, 200);
+  assert.equal((await getState(base)).state.slots[0].skillId, 'ruwu-sword-reference');
+});
+
+test('existing single-skill save is not migrated or reset by the new checkpoint option', async (t) => {
+  const options = await fixture(t);
+  const bytes = JSON.stringify({ checkpoint, character, equipped: false, taskComplete: true });
+  await writeFile(options.martialSaveFile, bytes);
+  const base = await start(t, { ...options, martialCheckpoint: eventCheckpoint });
+  const state = (await getState(base)).state;
+  assert.equal(state.checkpoint, checkpoint);
+  assert.deepEqual(state.owned, [{ id: 'uppercut-reference', level: 1 }]);
+  assert.equal(state.task.current, 1);
+  assert.equal(await readFile(options.martialSaveFile, 'utf8'), bytes);
+  assert.equal((await fetch(`${base}/api/martial-state/unequip`, { method: 'POST' })).status, 200);
+});
+
+test('two-skill character mismatch is rejected without resetting state', async (t) => {
+  const options = await fixture(t);
+  const base = await start(t, { ...options, martialCheckpoint: eventCheckpoint });
+  const bytes = await readFile(options.martialSaveFile, 'utf8');
+  await fetch(`${base}/api/character`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...character, name: '不匹配角色' }),
+  });
+  assert.equal((await fetch(`${base}/api/martial-state`)).status, 409);
+  assert.equal((await equip(base)).status, 409);
+  assert.equal(await readFile(options.martialSaveFile, 'utf8'), bytes);
 });

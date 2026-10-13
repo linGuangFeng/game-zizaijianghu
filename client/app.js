@@ -208,10 +208,16 @@ byId('back-martial-list').addEventListener('click', () => {
 let equipping = false;
 let editingEquipment = false;
 let equipmentState = null;
-const equippedSkillNames = { 'uppercut-reference': '上勾拳' };
+const equippedSkillNames = {
+  'uppercut-reference': '上勾拳',
+  'ruwu-sword-reference': '入悟剑法',
+};
 
 function displayCheckpoint(state) {
   equipmentState = state;
+  const canEdit = state.checkpoint === 'observed-before-equip';
+  if (!canEdit) editingEquipment = false;
+  byId('edit-equipment').hidden = !canEdit;
   byId('edit-equipment').textContent = editingEquipment ? '退出编辑' : '编辑';
   byId('edit-equipment').setAttribute('aria-pressed', String(editingEquipment));
   byId('equipment-edit-hint').hidden = !editingEquipment;

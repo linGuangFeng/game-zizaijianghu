@@ -81,7 +81,7 @@ npm.cmd start
 npm.cmd test
 ```
 
-测试使用系统临时目录和随机空闲端口，结束后清理，不覆盖日常存档。基础与只读目录的 9 项服务端接口测试通过；加上下方装配与卸下专项共 20 项通过：
+测试使用系统临时目录和随机空闲端口，结束后清理，不覆盖日常存档。基础与只读目录的 9 项服务端接口测试通过；加上下方装配、卸下及双技能专项共 25 项通过：
 
 1. 健康检查、参考选项、无角色 404、保存/读取、重复保存和姓名原样保留。
 2. 无效结构、未知选项、非法 JSON、错误媒体类型、超限正文、不支持方法均不改变已存状态。
@@ -225,3 +225,28 @@ npm.cmd start
 2. 卸下落盘失败后内存仍已装配、任务仍完成，原存档备份及角色文件不变，恢复后重试成功。
 3. 首次装配前重复卸下不改变任务；非法正文、错误方法、绑定冲突不改存档。
 4. 普通角色不能通过卸下隐式创建检查点。
+## 事件 1 后双技能装配检查点
+
+新增显式 `MARTIAL_CHECKPOINT=observed-event1-before-equip`。使用一组独立存档并先创建本地角色，初始化方法与前述检查点相同。若指定的武学文件已存在，按其原有检查点读取，绝不因新配置覆盖或迁移旧进度。普通未启检查点角色行为不变。
+
+此起点仅承载 `event1-evidence.md` 末节已经观察到的结果，不实现事件 1 战斗、自动判胜、收益结算或发奖，不表示所有新角色已通关事件。
+
+沿用 GET /api/martial-state、POST /api/martial-state/auto-equip（无正文），响应仍为 `{state:...}`：
+
+| 字段 | 初始化时 | 本地一键装配成功后 |
+| --- | --- | --- |
+| checkpoint | observed-event1-before-equip | 不变 |
+| owned 顺序 | uppercut-reference、ruwu-sword-reference，level 均为 1 | ruwu-sword-reference、uppercut-reference，level 均为 1 |
+| slots[0].skillId | uppercut-reference | ruwu-sword-reference |
+| slots[1].skillId | null | uppercut-reference |
+| 槽 3 | 空且未锁 | 不变 |
+| 槽 4～6 | 空且锁定 | 不变 |
+| task | `{"id":"event1-reference","label":"通关江湖事件1","current":1,"target":1}` | 原样保留 |
+
+`ruwu-sword-reference` 是入悟剑法的本地参考 ID。该技能未加入仅有上勾拳的详情图鉴，不补冷却、星级或养成数值。装配为这一固定输入的确切映射，不推演通用排序算法；拥有顺序与槽位顺序均以成功响应为准。
+
+该检查点的 POST /api/martial-state/unequip 返回 409 `{"error":"martial_action_not_observed"}`，装配前后均不写入。既有身份不匹配错误仍优先返回。此限制不改变单技能检查点已实现的卸下行为。
+
+双技能存档使用 `checkpoint`、绑定 `character` 及 `twoEquipped` 旗标；旧单技能 `equipped` / `taskComplete` 格式保持兼容且不重写。事件任务 1/1 是检查点已知结果，不从槽位是否为空或 `twoEquipped` 倒推。持久化沿用现有原子写入与队列；重复装配为本地幂等，失败不改已存状态。
+
+服务端开发测试当前为 **25/25**：新增精确前后映射及任务/角色不变、双技能卸下拒绝和真实进程重启、写入失败及恢复、旧检查点不被新配置覆盖、双技能绑定冲突不重置。独立 QA 与页面点击结果另行记录，不以开发测试代替。
