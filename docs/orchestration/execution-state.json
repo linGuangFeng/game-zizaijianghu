@@ -1,27 +1,23 @@
 {
   "projectComplete": false,
-  "activeWork": "编辑卸下实现与双层验收完成；事件1及双武学装配证据整理交接",
+  "activeWork": "双武学装配实现和双层验收完成，提交fa88965",
   "lastFailure": "代理结束后未接续；事件仅进入主会话邮箱未及时转交监听",
   "userPaused": false,
-  "nextAction": "MARTIAL-TWO-DEV：阅读事件1双武学证据，分派显式双武学检查点与一键装配顺序；接口和内部浏览器双层验收。未取证的战斗不伪造。",
+  "nextAction": "MARTIAL-TWO-REMOVE：先取原版全空及手动装配缺口，按已证实目标槽清空而其他槽不前移实现双技能编辑卸下，接口和页面双层验证",
   "status": "HANDOFF_READY",
-  "updatedAt": "2026-10-13T04:05:21.6657688Z",
+  "updatedAt": "2026-10-13T04:12:04.1052647Z",
   "agents": [
     {
-      "role": "client",
-      "state": "COMPLETE"
+      "state": "COMPLETE",
+      "role": "client"
     },
     {
-      "role": "server",
-      "state": "COMPLETE"
+      "state": "COMPLETE",
+      "role": "server"
     },
     {
-      "role": "qa",
-      "state": "COMPLETE"
-    },
-    {
-      "role": "requirements",
-      "state": "COMPLETE"
+      "state": "COMPLETE",
+      "role": "qa"
     }
   ],
   "blockers": [
