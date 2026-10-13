@@ -87,7 +87,11 @@ export async function createCharacterStore(file) {
     if (saved.assets.boundCharacter.name !== character.name || saved.assets.boundCharacter.appearanceId !== character.appearanceId) {
       throw new CommerceStateError(409, 'assets_character_mismatch');
     }
-    return { kind: 'local-assets', revision: saved.assets.revision, accounts: assetAccounts(saved.assets.entries), entries: structuredClone(saved.assets.entries) };
+    const accounts = assetAccounts(saved.assets.entries);
+    if (saved.domains.martial && (saved.domains.martial.uppercutProgress?.materialQuantity ?? null) === null) {
+      accounts.push({ id: 'uppercut-material-reference', name: '上勾拳', total: null, available: null });
+    }
+    return { kind: 'local-assets', revision: saved.assets.revision, accounts, entries: structuredClone(saved.assets.entries) };
   }
   let queue = Promise.resolve();
   function enqueue(action) {
@@ -98,23 +102,62 @@ export async function createCharacterStore(file) {
   return {
     get: getCharacter,
     getAssets: assetsState,
-    migrateAssets(realm, realmDigest) {
+    migrateAssets(realm, realmDigest, martial = null, martialDigest = null) {
       return enqueue(async () => {
         const character = getCharacter();
         if (!character) throw new Error('Character required for explicit migration.');
         if (saved.schemaVersion === 2) {
           assetsState();
-          if (saved.migration.realmDigest !== realmDigest) throw new Error('Migration source differs from committed migration.');
+          if ((!martial || realm) && saved.migration.realmDigest !== realmDigest) throw new Error('Migration source differs from committed migration.');
+          if (!martial) return assetsState();
+          if (saved.domains.martial) {
+            if (saved.migration.martialDigest !== martialDigest) throw new Error('Martial migration source differs from committed migration.');
+            return assetsState();
+          }
+          if (martial.character.name !== character.name || martial.character.appearanceId !== character.appearanceId) throw new Error('Martial migration character mismatch.');
+          const quantity = martial.uppercutProgress?.materialQuantity ?? null;
+          const assets = quantity === null ? saved.assets : { ...saved.assets, revision: saved.assets.revision + 1,
+            entries: [...saved.assets.entries, { id: 'martial-import:' + martialDigest, assetId: 'uppercut-material-reference', delta: quantity, source: 'martial-import' }] };
+          await persist({ ...saved, assets, domains: { ...saved.domains, martial: structuredClone(martial) }, migration: { ...saved.migration, martialDigest } });
           return assetsState();
         }
         commerceState();
         if (realm && (realm.character.name !== character.name || realm.character.appearanceId !== character.appearanceId)) throw new Error('Realm migration character mismatch.');
         let assets = { boundCharacter: { ...character }, revision: 0, entries: realm ? [{ id: 'realm-import:' + realmDigest, assetId: 'jianghu-experience', delta: realm.experience, source: 'realm-import' }] : [] };
         assets = creditCommerce(assets, saved.commerce?.grants ?? []);
+        if (martial && (martial.character.name !== character.name || martial.character.appearanceId !== character.appearanceId)) throw new Error('Martial migration character mismatch.');
+        const quantity = martial?.uppercutProgress?.materialQuantity ?? null;
+        if (quantity !== null) assets = { ...assets, revision: assets.revision + 1, entries: [...assets.entries,
+          { id: 'martial-import:' + martialDigest, assetId: 'uppercut-material-reference', delta: quantity, source: 'martial-import' }] };
         await persist({ schemaVersion: 2, character, commerce: saved.commerce ?? null, assets,
-          domains: realm ? { realm: structuredClone(realm) } : {}, migration: { realmDigest } });
+          domains: { ...(realm ? { realm: structuredClone(realm) } : {}), ...(martial ? { martial: structuredClone(martial) } : {}) }, migration: { realmDigest, ...(martial ? { martialDigest } : {}) } });
         return assetsState();
       });
+    },
+    martialStorage() {
+      if (saved?.schemaVersion !== 2 || !saved.domains.martial) return undefined;
+      function checkMaterial(assets, martial) {
+        const quantity = martial.uppercutProgress?.materialQuantity ?? null;
+        const account = assetAccounts(assets.entries).find((a) => a.id === 'uppercut-material-reference');
+        if (quantity === null ? account !== undefined : account?.available !== quantity) throw new Error('Martial asset invariant failed.');
+      }
+      return {
+        load: () => { checkMaterial(saved.assets, saved.domains.martial); return structuredClone(saved.domains.martial); }, enqueue,
+        persist: async (martial) => {
+          assetsState();
+          const before = saved.domains.martial.uppercutProgress?.materialQuantity ?? null;
+          const after = martial.uppercutProgress?.materialQuantity ?? null;
+          let assets = saved.assets;
+          if (before !== after) {
+            if (before === null || after === null || after !== before - 1) throw new Error('Unobserved martial material transition.');
+            assets = { ...assets, revision: assets.revision + 1, entries: [...assets.entries,
+              { id: 'martial-upgrade:' + martial.revision, assetId: 'uppercut-material-reference', delta: -1, source: 'martial-upgrade' }] };
+          }
+          checkMaterial(assets, martial);
+          if (!validAssets(assets)) throw new Error('Invalid martial asset transaction.');
+          await persist({ ...saved, assets, domains: { ...saved.domains, martial: structuredClone(martial) } });
+        },
+      };
     },
     realmStorage() {
       if (saved?.schemaVersion !== 2 || !saved.domains.realm) return undefined;

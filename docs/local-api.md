@@ -793,7 +793,7 @@ orderId为非空字符串，expectedRevision为非负安全整数。有效首次
 主会话已报告内部浏览器本轮范围通过，页面路径由QA补录到同一报告；本段不把独立HTTP代理写成浏览器执行者。当前完成的是普通角色可进入的本地测试订单→首日权益记录闭环，不是原版真实支付验收，也不是可消费资源、荡剑式玩法、后两日领取或正常主线解锁完成。
 
 
-## 显式统一资产与境界存档（schema2）
+## 显式统一资产、境界与武学存档（schema2）
 
 这是本地存档整合，不代表自然主线或资源授予已经完成。旧普通角色与schema1订单仍按上节工作；购买、领取和GET均不会自动启用assets。必须停止使用目标存档的服务，显式执行一次离线迁移。新角色资源未知，不默认赠币、材料或阅历。
 
@@ -804,7 +804,7 @@ node server/migrate-assets.js --character "D:/path/character.json"
 node server/migrate-assets.js --character "D:/path/character.json" --realm "D:/path/character.json.realm.json"
 ```
 
-以上为二选一的首次操作示例，不是顺序执行。`--character`必需，`--realm`可选；CLI参数顺序如上。角色必须已存在；选中的境界文件必须合法、绑定同一角色，且不是角色文件本身。工具不会创建检查点，也不将不同检查点拼成自然历史。迁移成功输出 `{state:资产状态}`，失败以非零退出码及错误信息结束。不要对正在运行的存档执行CLI。
+以上是两种首次操作示例，不是顺序执行；也可按下节首次同时选入武学。`--character`必需且放在首位，`--realm`、`--martial`可选且每项最多一次，两项可选参数的先后顺序不限。角色必须已存在；选中的境界文件必须合法、绑定同一角色，且不是角色文件本身。工具不会创建检查点，也不将不同检查点拼成自然历史。迁移成功输出 `{state:资产状态}`，失败以非零退出码及错误信息结束。不要对正在运行的存档执行CLI。
 
 选realm时保存其原始文件字节SHA-256到 `migration.realmDigest`；不选时为字符串`none`。同一来源摘要再次执行为无写入返回；摘要变化或后来追加realm均拒绝。一次迁移需要选好是否包含realm，本轮不支持向已迁移主档追加境界域。原侧档保留、不删除。迁入后应用优先使用主档内realm，不再读写该realm侧档；未迁入的境界仍使用原侧档模式。
 
@@ -824,7 +824,7 @@ node server/migrate-assets.js --character "D:/path/character.json" --realm "D:/p
 }
 ```
 
-原订单存在时保留commerce全部内容；选择realm时 `domains.realm` 原样保存所选境界状态。迁移只将已领取首日的宝典令、元宝记录分别入账一次；荡剑式继续作为commerce权益记录。选中realm的精确阅历余额作为有来源的期初记录，不从截图缩写反推数值。突破宝典令receipts、武学材料/成长、装备仍未并入资产账本。
+原订单存在时保留commerce全部内容；选择realm时 `domains.realm` 原样保存所选境界状态。迁移只将已领取首日的宝典令、元宝记录分别入账一次；荡剑式继续作为commerce权益记录。选中realm的精确阅历余额作为有来源的期初记录，不从截图缩写反推数值。突破宝典令receipts与装备仍未并入资产账本。武学材料/成长只在显式选择武学迁移后并入；未迁入的角色仍使用原武学侧档。
 
 ### 读取资产
 
@@ -877,3 +877,39 @@ assets.revision只描述资产账本变动，不是全域总revision，也不替
 各写端点仍使用其原有输入、绑定与版本错误；assets没有独立写HTTP接口。旧纯角色/schema1和schema2的 `/api/character` 返回形状均不变。损坏主档或迁入realm与账本余额不一致时拒绝启动，不以读时修复覆盖文件。
 
 本轮开发回归82/82通过，含7项统一资产测试：重复迁移、GET零写、迁入后侧档停用、并发单扣、主文件失败原子性、首日到账、绑定及真实进程恢复。页面和独立HTTP验收另由对应角色记录，开发测试不替代页面验收。
+
+
+### 武学迁入与材料账户
+
+首次迁移可同时选择两个既有域，也可先有schema2再单独追加武学。以下分别为首次全选和已有schema2追加的示例：
+
+```powershell
+node server/migrate-assets.js --character "D:/path/character.json" --realm "D:/path/character.json.realm.json" --martial "D:/path/character.json.martial.json"
+node server/migrate-assets.js --character "D:/path/character.json" --martial "D:/path/character.json.martial.json"
+```
+
+同样必须先停止使用目标存档的服务。武学源必须已存在、内容合法、绑定当前角色，并与角色文件及本次选择的境界源使用不同文件。主档保存 `domains.martial` 与 `migration.martialDigest`（源原始字节SHA-256），保留源文件。迁入后武学API从主档读取，不再读取或改写该武学侧档；GET不会执行迁移或初始化材料。
+
+已有schema2单独追加 `--martial` 时，保留原realm摘要、已消费的realm状态、订单和其他资产流水，不重新导入旧realm期初余额。若追加时也提供 `--realm`，只允许其摘要与既有realmDigest一致，仍不以源状态覆盖主域。已有martial且摘要一致时返回当前状态、无写入；摘要不同则拒绝。未带 `--martial` 的旧CLI比较语义不变：realm来源摘要必须与既有记录一致，不能借此追加realm或跳过旧来源检查。本轮新增的增量操作仅为追加尚未迁入的martial，不提供替换已迁域或自动重绑。
+
+上勾拳材料使用 `uppercut-material-reference` 账户。已知数量来自所选武学档 `uppercutProgress.materialQuantity`，迁移精确数量，不授予任何新材料。材料已知2与未知的响应分别为：
+
+```json
+{"id":"uppercut-material-reference","name":"上勾拳","total":2,"available":2}
+{"id":"uppercut-material-reference","name":"上勾拳","total":null,"available":null}
+```
+
+未知包括原字段缺省或null，仍显示账户但两值均null，不能显示为0或“已记录可用新增量0”。已知0则两值都是0；未迁入martial时不出现材料账户。已知材料由正流水建立期初量，未知材料没有虚构的0条目。原升级接口仍分别返回 `martial_material_unknown` 或 `martial_material_insufficient`，不新增材料获取接口。
+
+| source | id格式 | delta与含义 |
+| --- | --- | --- |
+| martial-import | martial-import:源SHA256 | 原武学档已知材料数量，允许0 |
+| martial-upgrade | martial-upgrade:武学提交revision | -1，已实现上勾拳Lv1→2升级 |
+
+迁入武学的装配、卸下、手动装配和升级均共用主store队列，与已迁入realm训练、commerce购买/领取及角色PUT串行提交。升级的level、材料扣1、武学revision和资产负流水通过主文件同一次替换提交；失败不会只升级或只扣材。装卸保留成长材料、不产生资产流水；真实装卸变化增加武学revision，但不增加assets.revision。原装卸HTTP正文不变，升级继续使用武学expectedRevision，并不改为assets版本。幂等无变化动作不写文件；升级旧版本冲突仍优先于已Lv2边界判断。
+
+已知材料迁入增加一次assets.revision；未知材料迁入没有资产流水，因此不增加资产版本。后续升级扣材增加一次assets.revision。武学API响应仍是原state形状；客户端在成功或恢复读取后另GET资产状态。角色更名或外观变化不清空或重绑已迁域，原绑定冲突继续生效。材料与主域数量不一致时拒绝启动，不进行读时修复。
+
+荡剑式仍仅为本地测试商品权益记录，不因本次武学迁移变为可用武学；装备和突破宝典令receipts也没有被顺带并入。不同检查点并存仍只是所选本地状态，不表示普通角色自然完成了对应任务或资源获得流程。
+
+本轮开发回归89/89通过，其中新增5项验证增量保留已消费realm、来源摘要幂等、unknown/0区分、升级失败及并发单扣、跨域并发不丢状态、侧档停用和真实进程恢复。独立QA与页面验证由各执行角色另行记录。

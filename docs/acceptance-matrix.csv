@@ -34,3 +34,4 @@ LOCAL-NINTH-TRAINING,local-function,既有突破档九品第一重39次训练及
 LOCAL-TEST-COMMERCE,local-function,固定¥6测试购买直接paid与独立首日领取,原版商品首日展示与自定义本地协议,独立HTTP10项通过；原子并发重放身份旧档重启及其他档隔离,主会话普通角色无checkpoint购买领取停服重读旧版本冲突刷新通过,PASS,首日仅三权益流水非可消费钱包或可用武学；后两日复购未实现；页面延迟GET提交后丢响应未测；REQ004整体未完成,docs/test-commerce-qa.md；docs/event8-payment-evidence.md
 "LOCAL-ASSETS-REALM","functional","显式迁移统一角色资产与境界消费","docs/local-api.md","独立CLI/HTTP10项PASS；开发82项通过","3013页面领取入账训练扣费双页冲突停服重读刷新PASS","PASS","仅assets及realm显式迁移；武学装备与突破票据未统一；无自然挂机公式或货币消费","docs/assets-realm-qa.md"
 "LOCAL-REALM-SECOND","functional","现有九品第二重训练至第三重展示","docs/train123-evidence.md","独立HTTP8项PASS与开发84项通过","3014页面三类训练54边界停服重读冲突刷新PASS","PASS","第三重后续未实现；人工余额fixture非自然任务；不新增checkpoint","docs/second-stage-qa.md"
+"LOCAL-ASSETS-MARTIAL","functional","显式武学迁移与材料原子消费","docs/local-api.md","独立HTTP/CLI10项PASS开发89项通过","3015升级故障恢复冲突刷新跨境界及3016未知材料禁用PASS","PASS","仅已有上勾拳1至2及迁入域，装备突破票据未统一，自然抽奖仍未实现","docs/martial-assets-qa.md"

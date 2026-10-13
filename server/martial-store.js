@@ -51,14 +51,14 @@ export class MartialStateError extends Error {
   }
 }
 
-export async function createMartialStore({ file, checkpoint, character }) {
+export async function createMartialStore({ file, checkpoint, character, storage }) {
   const checkpoints = ['observed-before-equip', 'observed-event1-before-equip'];
   if (checkpoint !== undefined && !checkpoints.includes(checkpoint)) {
     throw new Error('Unknown local martial checkpoint.');
   }
   let saved = null;
   try {
-    saved = JSON.parse(await readFile(file, 'utf8'));
+    saved = storage ? storage.load() : JSON.parse(await readFile(file, 'utf8'));
     const validState = saved?.checkpoint === 'observed-before-equip'
       ? typeof saved.equipped === 'boolean' && typeof saved.taskComplete === 'boolean'
       : saved?.checkpoint === 'observed-event1-before-equip' && validTwoSave(saved);
@@ -70,6 +70,7 @@ export async function createMartialStore({ file, checkpoint, character }) {
   }
 
   async function persist(next) {
+    if (storage) { await storage.persist(next); saved = next; return; }
     await mkdir(dirname(file), { recursive: true });
     const temporary = `${file}.${randomUUID()}.tmp`;
     try {
@@ -124,8 +125,14 @@ export async function createMartialStore({ file, checkpoint, character }) {
     await persist({ ...retained, twoSlots, ownedOrder, revision: (saved.revision ?? 0) + 1 });
   }
   let queue = Promise.resolve();
+  function enqueue(action) {
+    if (storage) return storage.enqueue(action);
+    const operation = queue.then(action);
+    queue = operation.catch(() => {});
+    return operation;
+  }
   function setEquipped(equipped, getCharacter) {
-    const operation = queue.then(async () => {
+    const operation = enqueue(async () => {
       const character = getCharacter();
       const state = stateFor(character);
       if (saved.checkpoint === 'observed-event1-before-equip') {
@@ -144,7 +151,7 @@ export async function createMartialStore({ file, checkpoint, character }) {
     return operation;
   }
   function unequipSlot(position, getCharacter) {
-    const operation = queue.then(async () => {
+    const operation = enqueue(async () => {
       const character = getCharacter();
       const state = stateFor(character);
       if (saved.checkpoint !== 'observed-event1-before-equip') {
@@ -162,7 +169,7 @@ export async function createMartialStore({ file, checkpoint, character }) {
     return operation;
   }
   function equipSkill(skillId, getCharacter) {
-    const operation = queue.then(async () => {
+    const operation = enqueue(async () => {
       const character = getCharacter();
       const state = stateFor(character);
       if (saved.checkpoint !== 'observed-event1-before-equip') {
@@ -181,7 +188,7 @@ export async function createMartialStore({ file, checkpoint, character }) {
     return operation;
   }
   function upgrade(expectedRevision, getCharacter) {
-    const operation = queue.then(async () => {
+    const operation = enqueue(async () => {
       const character = getCharacter();
       const state = stateFor(character);
       if (state.revision !== expectedRevision) throw new MartialStateError(409, 'martial_revision_conflict');

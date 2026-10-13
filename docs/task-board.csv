@@ -3,7 +3,7 @@
 "PLAN-02","取证流程与规格模板","game_research","VERIFIED","","docs/requirements-workflow.md","文档已审查；不代表游戏实现或验收完成"
 "PLAN-03","其他会话可用任务卡","repo_architect","VERIFIED","","docs/agent-handoffs.md","文档已审查；不代表游戏实现或验收完成"
 "PLAN-04","1:1独立验收标准","qa_planner","VERIFIED","","docs/test-plan.md和docs/acceptance-matrix.csv","文档已审查；不代表游戏实现或验收完成"
-"DISC-01","进入推荐服与新手流程取证","需求角色","RUNNING","","原版证据及首个功能规格","L20挂机12h领取、123训练及事件9已完成领取；现藏经阁累计抽11次5/11、事件10卡、银495。连续证据见idle-reward-evidence和train123-evidence；新号初始链仍缺"
+"DISC-01","进入推荐服与新手流程取证","需求角色","RUNNING","","原版证据及首个功能规格","L20藏经阁实际累计11已领取10次目标，原先目标11读数错误已纠正，多抽1次已记录；现武学累计等级5达6/5待领取、事件10卡、银505；见draw11-evidence"
 "DISC-02","页面系统与资源盘点","需求及资源角色","RUNNING","DISC-01","系统清单和素材台账","事件8完成及荡剑式¥6首日展示已取证；商城特权出现继续调查；后两日领取与全档位未知，见docs/event8-payment-evidence.md"
 "ARCH-01","引擎与接口契约定稿","架构角色","TODO","DISC-01","技术决策与首个契约","依据2D或3D及动画实机证据定栈"
 "DEV-01","首个已验证流程客户端","客户端角色","TODO","ARCH-01","客户端及自测证据","待规格与文件所有权下发"
@@ -34,3 +34,4 @@
 "PAY-FIRST-DAY","固定¥6测试购买与独立首日流水","服务端/客户端/QA及主会话","VERIFIED","PAY-01","docs/test-commerce-qa.md","独立HTTP10项及3012真实页面购买领取停服重读冲突刷新通过；无checkpoint；仅三条流水非可消费钱包或可用武学；不代表完整充值"
 "ASSETS-REALM","显式统一角色资产与境界消费事务","服务端/客户端/QA及主会话","VERIFIED","PAY-FIRST-DAY和REALM-FIRST-BREAKTHROUGH","docs/assets-realm-qa.md和docs/local-api.md","开发82项及独立HTTP/CLI10项通过；3013页面购买领取训练冲突停服重读刷新通过；仅显式迁移assets和realm，非完整钱包或自然获取"
 "REALM-SECOND-STAGE","九品前期第二重54次训练","服务端/客户端/QA及主会话","VERIFIED","ASSETS-REALM","docs/second-stage-qa.md及docs/train123-evidence.md","开发84项独立HTTP8项与3014页面54次停服恢复双页冲突刷新通过；第三重0/66仅展示，非自然123任务闭环"
+"ASSETS-MARTIAL","武学材料消费并入主存档事务","服务端/客户端/QA及主会话","VERIFIED","ASSETS-REALM","docs/martial-assets-qa.md及docs/local-api.md","开发89项独立HTTP/CLI10项，3015升级停服恢复冲突与3016未知材料页面通过；已知材料原子扣费，未自动授予武学或自然材料"

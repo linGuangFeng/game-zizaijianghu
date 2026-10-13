@@ -325,6 +325,7 @@ async function readCheckpoint() {
     if (request !== checkpointRequest) return;
     martialGrowthReady = true;
     displayCheckpoint(result.state);
+    readAssets();
     byId('open-equipment').hidden = false;
     byId('auto-equip').disabled = false;
     byId('edit-equipment').disabled = false;
@@ -931,6 +932,7 @@ byId('retry-player-martial').addEventListener('click', readCheckpoint);
 byId('upgrade-martial').addEventListener('click', async () => {
   if (equipping || !martialGrowthReady) return;
   equipping = true;
+  markAssetsPending();
   martialGrowthReady = false;
   ++checkpointRequest;
   byId('upgrade-martial').disabled = true;
@@ -969,6 +971,7 @@ byId('upgrade-martial').addEventListener('click', async () => {
     byId('retry-equipment').hidden = false;
   } finally {
     equipping = false;
+    readAssets();
     byId('back-player-martial').disabled = false;
     byId('retry-player-martial').disabled = false;
     displayPlayerMartial();
@@ -1190,6 +1193,8 @@ const assetSourceNames = {
   'local-test-day1': '测试充值首日奖励',
   'realm-import': '既有阅历记录',
   'realm-training': '境界修炼',
+  'martial-import': '既有武学材料记录',
+  'martial-upgrade': '上勾拳升级消耗',
 };
 
 function assetSections() {
@@ -1212,7 +1217,7 @@ function displayAssets(state) {
     const accounts = section.querySelector('.asset-accounts');
     accounts.replaceChildren();
     for (const account of state.accounts) {
-      const value = account.total === null ? `总量未知；已记录可用新增量 ${account.available}` : `实际余额 ${account.total}`;
+      const value = account.total === null && account.available === null ? '材料数量未知' : account.total === null ? `总量未知；已记录可用新增量 ${account.available}` : `实际余额 ${account.total}`;
       addFact(accounts, account.name, value);
     }
     const entries = section.querySelector('.asset-entries');
