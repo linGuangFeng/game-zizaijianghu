@@ -1,6 +1,6 @@
 # 本地基础接口与运行说明
 
-本文件定义的是自建本地存档服务，不是原版接口协议。当前实现仅包含健康检查、两个截图参考外观标识、单角色姓名/外观存档及 `client/` 静态文件服务，不代表原版创角或完整游戏已复刻。
+本文件定义的是自建本地存档服务，不是原版接口协议。当前实现包含健康检查、两个截图参考外观标识、单角色姓名/外观存档、只读武学参考目录及 `client/` 静态文件服务，不代表原版创角或完整游戏已复刻。
 
 ## 运行
 
@@ -81,7 +81,7 @@ npm.cmd start
 npm.cmd test
 ```
 
-测试使用系统临时目录和随机空闲端口，结束后清理，不覆盖日常存档。当前 7 项接口测试通过：
+测试使用系统临时目录和随机空闲端口，结束后清理，不覆盖日常存档。当前 9 项服务端接口测试通过：
 
 1. 健康检查、参考选项、无角色 404、保存/读取、重复保存和姓名原样保留。
 2. 无效结构、未知选项、非法 JSON、错误媒体类型、超限正文、不支持方法均不改变已存状态。
@@ -90,5 +90,60 @@ npm.cmd test
 5. 同源静态文件可读；原始/编码路径穿越及目录外 junction 被拒绝。
 6. 损坏的已有存档拒绝启动且内容不被覆盖。
 7. 真实 HTTP 请求把中文 UTF-8 字节拆分发送，姓名仍准确保存。
+8. 武学参考目录在无角色时可读取，展示字段与已核实证据一致，不创建存档。
+9. 读取目录及拒绝写入请求后，已有角色存档逐字节不变。
 
 这些是本地基础接口测试。内部浏览器页面点击、原版画面对照、原版角色持久化与完整游戏系统验收由独立 QA 另行执行，不能据此标为通过。当前不含充值档位、订单、战斗、任务奖励或任何原站连接。
+## 只读武学参考目录
+
+`GET /api/reference/martial-catalog` 返回 200，非 GET 方法返回 405 `{"error":"method_not_allowed"}`。不要求角色已创建，不读取或修改角色武学，不新增存档字段，也不为已有角色迁移或补充默认值。
+
+```json
+{
+  "kind": "reference-catalog",
+  "evidence": [
+    "docs/evidence/original-martial-list.jpg",
+    "docs/evidence/original-martial-detail.jpg"
+  ],
+  "observedSlots": [
+    {"position":1,"visibleState":"plus-alert"},
+    {"position":2,"visibleState":"plus-alert"},
+    {"position":3,"visibleState":"plus-alert"},
+    {"position":4,"visibleState":"locked"},
+    {"position":5,"visibleState":"locked"},
+    {"position":6,"visibleState":"locked"}
+  ],
+  "entries": [{
+    "id":"uppercut-reference",
+    "name":"上勾拳",
+    "categoryText":"通用",
+    "levelText":"1",
+    "starsText":"0星",
+    "roleText":"控制",
+    "cooldownText":"7.3秒",
+    "descriptionFragments":[
+      "施展上勾拳","对选中目标造成","自身攻击力90%(27)",
+      "并对范围内目标（最多3人）造成30%伤害",
+      "且此技能对击中目标造成击飞效果"
+    ],
+    "descriptionComplete":false,
+    "attributes":[
+      {"label":"攻击","text":"20+20"},
+      {"label":"防御","text":"10+10"},
+      {"label":"气血","text":"1000+1000"}
+    ],
+    "observedTalentRows":[
+      {"levelText":"Lv.25","visibleState":"locked","readableText":"武学属性提升+0.5%","textComplete":true},
+      {"levelText":"Lv.50","visibleState":"locked","readableText":"攻击增加+200","textComplete":false},
+      {"levelText":"Lv.75","visibleState":"locked","readableText":"攻击增加+400","textComplete":false}
+    ],
+    "upgradeCounterText":"0/1"
+  }]
+}
+```
+
+`uppercut-reference` 是本地参考编号，不是原版技能 ID。`observedSlots` 表示采样截图中 6 个位置的可见状态，不能据此给新角色解锁前三槽或锁定后三槽。entries 的单项也不等于本地角色已拥有该技能或游戏只有该技能。
+
+所有 `Text`、属性和说明片段仅供展示：`90%(27)` 不参与伤害计算，`7.3秒` 不作为运行时冷却，绿色加号数值不解释为升级结果，`0/1` 不解释为已知道具消耗。说明裁切和天赋行未核清部分用完整性标记保留未知，不补写推测文案。证据范围见 `martial-evidence.md`。
+
+当前无武学装配、卸下、升级、升星或技能施放接口。取证确认具体操作后再独立约定角色武学状态与存档方式；目录内容不得被当成可写玩家状态。

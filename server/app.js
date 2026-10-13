@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { martialCatalog } from './martial-catalog.js';
 import { readFile, realpath, stat } from 'node:fs/promises';
 import { extname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { appearanceOptions, createCharacterStore, isCharacter } from './store.js';
@@ -52,6 +53,11 @@ export async function createApp({ saveFile, clientDirectory }) {
       catch { return json(response, 400, { error: 'invalid_path' }); }
       if (pathname === '/api/health' && request.method === 'GET') return json(response, 200, { status: 'ok', scope: 'local-foundation' });
       if (pathname === '/api/appearance-options' && request.method === 'GET') return json(response, 200, { options: appearanceOptions });
+      if (pathname === '/api/reference/martial-catalog') {
+        return request.method === 'GET'
+          ? json(response, 200, martialCatalog)
+          : json(response, 405, { error: 'method_not_allowed' });
+      }
       if (pathname === '/api/character') {
         if (request.method === 'GET') {
           const character = store.get();
