@@ -22,3 +22,4 @@ LOCAL-07,checkpoint,双技能手动卡片装配,两技能已确认状态集合,�
 FLOW-01,full-flow,普通角色自然到达主场景与武学及装备,完整复刻目标,无检查点的前置任务与获取状态链待实现,从空存档创建角色后自然进入完整流程待实现,BLOCKED,现武学依赖显式检查点；没有主场景与装备实际闭环,docs/test-plan.md；docs/local-api.md
 VISUAL-01,visual,已取证页面1比1视觉与动画音频,完整复刻目标,不适用,当前为文字标记及CSS基础布局；未通过原版视觉验收,BLOCKED,角色背景图标字体动画音频独立素材缺失；禁止用局部接口通过代替视觉通过,docs/visual-asset-inventory.md
 EQUIP-01,full-flow,人物装备解锁获取穿戴与保存,完整复刻目标,装备合同尚未确认,原版装备尚未解锁；继续前置取证,BLOCKED,不能把代码equipment-panel武学装配面板当作人物装备实现,docs/test-plan.md
+LOCAL-NAV,local-function,江湖导航容器与已实现页面往返,本地阶段交付,普通角色与检查点实际响应驱动入口,内部浏览器普通创角导航刷新及两种慢响应通过,PASS,仅容器导航；地图自然任务战斗和美术未完成,docs/main-scene-qa.md
