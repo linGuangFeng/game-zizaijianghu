@@ -123,3 +123,7 @@ dd { margin: 0; overflow-wrap: anywhere; }
 .is-jianghu #open-character { grid-column: 1; }
 .is-jianghu #open-equipment { grid-column: 2; }
 .is-jianghu button:focus-visible { outline-offset: -4px; }
+
+#player-martial-detail { margin-top: 24px; }
+#player-martial-detail > button { width: 100%; margin-top: 12px; }
+#player-martial-material { padding: 14px; background: #e9dfc6; color: #544732; font-size: 14px; line-height: 1.6; }

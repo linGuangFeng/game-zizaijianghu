@@ -5,6 +5,24 @@ import { isCharacter } from './store.js';
 
 const uppercut = 'uppercut-reference';
 const sword = 'ruwu-sword-reference';
+function validGrowth(data) {
+  if (data.revision !== undefined && (!Number.isSafeInteger(data.revision) || data.revision < 0)) return false;
+  const progress = data.uppercutProgress;
+  return progress === undefined || (progress !== null && typeof progress === 'object' && !Array.isArray(progress)
+    && Object.keys(progress).every((key) => ['level', 'materialQuantity'].includes(key))
+    && [1, 2].includes(progress.level)
+    && (progress.materialQuantity === undefined || progress.materialQuantity === null
+      || (Number.isSafeInteger(progress.materialQuantity) && progress.materialQuantity >= 0)));
+}
+function growthFor(data) {
+  const level = data.uppercutProgress?.level ?? 1;
+  return { uppercut: {
+    skillId: uppercut, level,
+    attributes: level === 1 ? { attack: 20, defense: 10, health: 1000 } : { attack: 40, defense: 20, health: 2000 },
+    material: { id: 'uppercut-material-reference', name: '上勾拳', quantity: data.uppercutProgress?.materialQuantity ?? null },
+    upgrade: { targetLevel: 2, cost: 1, supported: level === 1 },
+  } };
+}
 function twoSkillState(data) {
   return data.twoSlots !== undefined
     ? { slots: data.twoSlots, ownedOrder: data.ownedOrder }
@@ -44,7 +62,7 @@ export async function createMartialStore({ file, checkpoint, character }) {
     const validState = saved?.checkpoint === 'observed-before-equip'
       ? typeof saved.equipped === 'boolean' && typeof saved.taskComplete === 'boolean'
       : saved?.checkpoint === 'observed-event1-before-equip' && validTwoSave(saved);
-    if (!validState || !isCharacter(saved.character)) {
+    if (!validState || !isCharacter(saved.character) || !validGrowth(saved)) {
       throw new Error('Invalid local martial save.');
     }
   } catch (error) {
@@ -82,7 +100,8 @@ export async function createMartialStore({ file, checkpoint, character }) {
       return {
         kind: 'local-martial-checkpoint',
         checkpoint: saved.checkpoint,
-        owned: ownedIds.map((id) => ({ id, level: 1 })),
+        revision: saved.revision ?? 0, growth: growthFor(saved),
+        owned: ownedIds.map((id) => ({ id, level: id === uppercut ? (saved.uppercutProgress?.level ?? 1) : 1 })),
         slots: [1, 2, 3, 4, 5, 6].map((position) => ({
           position, skillId: assigned[position - 1] ?? null, locked: position >= 4,
         })),
@@ -92,7 +111,8 @@ export async function createMartialStore({ file, checkpoint, character }) {
     return {
       kind: 'local-martial-checkpoint',
       checkpoint: saved.checkpoint,
-      owned: [{ id: 'uppercut-reference', level: 1 }],
+      revision: saved.revision ?? 0, growth: growthFor(saved),
+      owned: [{ id: 'uppercut-reference', level: saved.uppercutProgress?.level ?? 1 }],
       slots: [1, 2, 3, 4, 5, 6].map((position) => ({
         position, skillId: position === 1 && saved.equipped ? 'uppercut-reference' : null, locked: position >= 4,
       })),
@@ -100,7 +120,8 @@ export async function createMartialStore({ file, checkpoint, character }) {
     };
   }
   async function persistTwo(twoSlots, ownedOrder) {
-    await persist({ checkpoint: saved.checkpoint, character: saved.character, twoSlots, ownedOrder });
+    const { twoEquipped, ...retained } = saved;
+    await persist({ ...retained, twoSlots, ownedOrder, revision: (saved.revision ?? 0) + 1 });
   }
   let queue = Promise.resolve();
   function setEquipped(equipped, getCharacter) {
@@ -116,7 +137,7 @@ export async function createMartialStore({ file, checkpoint, character }) {
       }
       const taskComplete = saved.taskComplete || equipped;
       if (saved.equipped === equipped && saved.taskComplete === taskComplete) return state;
-      await persist({ ...saved, equipped, taskComplete });
+      await persist({ ...saved, equipped, taskComplete, revision: (saved.revision ?? 0) + 1 });
       return stateFor(character);
     });
     queue = operation.catch(() => {});
@@ -159,8 +180,25 @@ export async function createMartialStore({ file, checkpoint, character }) {
     queue = operation.catch(() => {});
     return operation;
   }
+  function upgrade(expectedRevision, getCharacter) {
+    const operation = queue.then(async () => {
+      const character = getCharacter();
+      const state = stateFor(character);
+      if (state.revision !== expectedRevision) throw new MartialStateError(409, 'martial_revision_conflict');
+      const progress = state.growth.uppercut;
+      if (progress.level !== 1) throw new MartialStateError(409, 'martial_upgrade_not_observed');
+      if (progress.material.quantity === null) throw new MartialStateError(409, 'martial_material_unknown');
+      if (progress.material.quantity < 1) throw new MartialStateError(409, 'martial_material_insufficient');
+      await persist({ ...saved, revision: state.revision + 1,
+        uppercutProgress: { level: 2, materialQuantity: progress.material.quantity - 1 } });
+      return stateFor(character);
+    });
+    queue = operation.catch(() => {});
+    return operation;
+  }
   return {
     get: stateFor,
+    upgrade,
     unequipSlot,
     equipSkill,
     equip: (getCharacter) => setEquipped(true, getCharacter),

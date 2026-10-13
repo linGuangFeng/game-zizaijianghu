@@ -553,3 +553,76 @@ expectedRevision为非负安全整数，先检查版本再处理重复动作。�
 主会话内部浏览器已实际通过普通角色无入口、显式检查点三项领取、断连后锁写/重启重读、双页领取及突破版本冲突只读恢复；最终revision4、三条唯一流水、江湖阅历120不变。页面证据归主会话，不能将独立HTTP代理未操作浏览器的记录当作该代理页面验收。
 
 当前仍为显式检查点，不代表普通角色已自然完成事件5、装配2本和修炼30次；不实现主线领奖、令牌总余额、下一次突破、新境界训练或完整成长系统。
+
+## 上勾拳Lv1→2：既有武学存档增量
+
+本轮直接扩展现有两个武学检查点，不新增checkpoint，不改变旧装卸请求正文。普通角色无武学存档仍404，不因打开养成页取得武学或材料。正材料测试仅来自明确标识的隔离人工文件，不是生产获取流程。
+
+### 新增状态与旧档读取
+
+`GET /api/martial-state` 及所有成功武学写响应的state新增revision与growth；既有owned、slots、task保持，owned内上勾拳level改为真实保存等级。旧档无成长字段时投影如下，不写迁移：
+
+```json
+{
+  "revision":0,
+  "growth":{
+    "uppercut":{
+      "skillId":"uppercut-reference",
+      "level":1,
+      "attributes":{"attack":20,"defense":10,"health":1000},
+      "material":{"id":"uppercut-material-reference","name":"上勾拳","quantity":null},
+      "upgrade":{"targetLevel":2,"cost":1,"supported":true}
+    }
+  }
+}
+```
+
+上述是state增量字段，不替换已有结构。quantity=null表示材料数量未知，不能显示为0；只有明确保存的0才表示材料不足。supported仅表示本轮支持该等级的升级，不代表材料已满足。attributes为已证当前武学展示属性，不是角色总属性或战斗公式。
+
+持久字段为可选revision和可选 `uppercutProgress:{level,materialQuantity}`。revision存在时必须是非负安全整数；uppercutProgress存在时level只允许1或2，materialQuantity允许非负安全整数、null或缺省，缺省同样投影未知；不允许额外成长字段。非法已存数据拒绝加载，不覆盖。旧布尔槽位格式仍能只读兼容；缺revision投影0、缺成长投影已知检查点Lv1，均不在GET补写。
+
+### 升级接口与原子性
+
+`POST /api/martial-state/upgrade` 要求JSON媒体类型，正文严格为：
+
+```json
+{"skillId":"uppercut-reference","expectedRevision":0}
+```
+
+skillId只允许上勾拳，expectedRevision为当前非负安全整数版本。验证角色绑定和检查点后，依次检查版本、等级必须为1、材料数量已知且至少1。成功返回200完整 `{state:...}`，一次事务扣1材料、保存level2并使revision加1；角色、槽位、列表顺序和任务状态不因升级改变。
+
+人工隔离样本Lv1、材料2成功后为Lv2、材料1；growth属性变为攻击40、防御20、气血2000，owned上勾拳level同步为2。upgrade仍保留targetLevel=2/cost=1，但supported=false；这不是Lv2→3预览或消耗承诺，不继续升3。
+
+升级复用武学串行队列与单文件原子替换，成功落盘才更新内存；写失败不扣材料、不升级、不加版本。旧revision请求先拒绝，即使技能已Lv2；当前revision再次尝试Lv2返回范围拒绝，**升级不定义为重复成功的幂等动作**。版本冲突或结果不明应重新GET，由用户决定后续操作，不自动重发。
+
+### 现有装卸兼容
+
+一键装配、单技能卸下、指定槽卸下及手动装配继续原请求正文。所有实际状态变化现在使武学revision加1；重复无变化仍不写、不增版本。它们会保留uppercutProgress，不能重建槽位存档时丢失材料与等级。旧twoEquipped档在实际装卸写入时转为twoSlots/ownedOrder，保留其他成长数据；GET不转换。
+
+装卸和升级共用队列。因此另一页装卸改变版本后，旧详情升级会冲突且不扣材料。原装卸端点本身未新增expectedRevision字段，不将这项兼容扩展说成全部旧动作已提供客户端版本校验。
+
+只读 `/api/reference/martial-catalog` 仍是原Lv1截图参考，不因玩家升级改写；玩家养成页必须使用growth当前值，不把图鉴的Lv1属性或0/1材料展示当玩家状态。
+
+| 状态 / error | 含义 |
+| --- | --- |
+| 404 character_not_found | 无本地角色 |
+| 404 martial_checkpoint_not_initialized | 没有既有武学检查点 |
+| 409 martial_checkpoint_character_mismatch | 角色身份与武学绑定不符 |
+| 409 martial_revision_conflict | 升级请求版本不是当前版本 |
+| 409 martial_upgrade_not_observed | 当前不是本轮支持升级的Lv1，例如已Lv2 |
+| 409 martial_material_unknown | 材料数量未确认 |
+| 409 martial_material_insufficient | 已知材料为0，不足消耗1 |
+| 400 invalid_martial_upgrade | skillId、版本或正文结构不符，含额外/缺少字段 |
+| 400 invalid_json | JSON无法解析 |
+| 415 json_required | 未声明JSON媒体类型 |
+| 413 body_too_large | 正文超过16 KiB |
+| 405 method_not_allowed | 升级路径非POST |
+| 500 local_operation_failed | 本地持久化等操作失败 |
+
+### 验证与边界
+
+全部开发回归63/63通过，升级新增6项；独立HTTP QA 10/10通过，见 [升级独立QA](martial-upgrade-qa.md)。覆盖未知/0材料、Lv2拒绝、并发只扣一次、失败原子性、装卸不丢成长、旧档只读兼容、真实重启及绑定校验。
+
+主会话内部浏览器已通过旧档未知材料禁用升级；人工隔离Lv1材料2样本断服失败锁定、新进程重读；另一页卸下使revision1后，旧详情revision0升级冲突且只重读不扣；用户明确再次点击后升级至Lv2/材料1/revision2、属性40/20/2000；另一页一键装配至revision3仍保留成长，刷新一致。页面验收归主会话，不以HTTP测试替代。
+
+原版材料提示已明确名称上勾拳、来源藏经阁，但本地没有材料获取、抽取、赠送或购买接口，也不因旧图0/1给生产存档写0。本轮不含Lv3、其他武学升级、升星、完整属性成长或自然任务授予。

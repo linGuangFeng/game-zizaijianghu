@@ -28,3 +28,4 @@ LOCAL-GEAR,checkpoint,血战刀金紫更换与一键穿戴,observed-event5-blade
 LOCAL-BREAKTHROUGH,checkpoint,首次突破三条件领取与进阶,observed-before-first-breakthrough显式检查点,独立接口10/10通过；开发回归57/57通过,主会话内部浏览器真实点击通过,PASS,仅三项宝典令流水与首次九品前期突破；非完整境界自然主线或视觉1比1,docs/breakthrough-qa.md；docs/event5-equipment-evidence.md
 ONBOARDING-L21,investigation,新服自然开局连续证据,新服凌云21服L21,未取得自然创角到授予技能完整契约,HTTPS不安全WebSocket触发SecurityError；未创建新角色,BLOCKED,旧服L20已完成事件6及第二探宝和首次升级；当前事件7任务0/1未进；保留自然开局初值和授予规则未知,docs/onboarding-evidence.md；docs/event5-equipment-evidence.md
 LOCAL-MAIN-LAYOUT,local-layout,江湖全幅舞台与入口位置,原版405比720布局,实际HTTP静态文件与角色突破读取通过；API未改,1280比720内部浏览器身份任务及页面往返通过,PASS,仅布局；本地简化背景非1比1美术；窄屏及战斗自然主线未完成,docs/main-scene-qa.md
+LOCAL-MARTIAL-UPGRADE,local-function,既有武学存档上勾拳1至2级升级,原版首次升级证据与既有武学成长契约,独立接口10/10通过；开发回归63/63通过,主内部浏览器未知材料禁用及停服锁定重启通过；双页装卸版本冲突只读恢复通过；明确升级材料2至1且Lv2及装配保成长刷新通过,PASS,不新建checkpoint或生产发材料；仅首次升级；材料获取自然闭环及完整养成视觉仍未完成；原版事件7任务0/1未进,docs/martial-upgrade-qa.md；docs/event6-evidence.md
