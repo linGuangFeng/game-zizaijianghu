@@ -162,3 +162,71 @@ test('stored task completion is independent of whether slot one is currently equ
   assert.equal(state.slots[0].skillId, null);
   assert.equal(state.task.current, 1);
 });
+test('equip then unequip preserves completed task across a real process restart', async (t) => {
+  const options = await fixture(t);
+  const roleBytes = await readFile(options.saveFile, 'utf8');
+  const first = await processServer(t, options, true);
+  await equip(first.base);
+  const response = await fetch(`${first.base}/api/martial-state/unequip`, { method: 'POST' });
+  assert.equal(response.status, 200);
+  const after = await response.json();
+  assert.equal(after.state.slots[0].skillId, null);
+  assert.equal(after.state.task.current, 1);
+  assert.deepEqual(after.state.owned, [{ id: 'uppercut-reference', level: 1 }]);
+  const bytes = await readFile(options.martialSaveFile, 'utf8');
+  const repeat = await fetch(`${first.base}/api/martial-state/unequip`, { method: 'POST' });
+  assert.deepEqual(await repeat.json(), after);
+  assert.equal(await readFile(options.martialSaveFile, 'utf8'), bytes);
+  await first.stop();
+  const second = await processServer(t, options, false);
+  assert.deepEqual(await getState(second.base), after);
+  assert.equal(await readFile(options.saveFile, 'utf8'), roleBytes);
+});
+
+test('unequip disk failure keeps equipped state and task; recovery can retry safely', async (t) => {
+  const options = await fixture(t);
+  const base = await start(t, { ...options, martialCheckpoint: checkpoint });
+  await equip(base);
+  const before = await getState(base);
+  const bytes = await readFile(options.martialSaveFile, 'utf8');
+  const roleBytes = await readFile(options.saveFile, 'utf8');
+  const backup = `${options.martialSaveFile}.backup`;
+  await rename(options.martialSaveFile, backup);
+  await mkdir(options.martialSaveFile);
+  assert.equal((await fetch(`${base}/api/martial-state/unequip`, { method: 'POST' })).status, 500);
+  assert.deepEqual(await getState(base), before);
+  assert.equal(await readFile(backup, 'utf8'), bytes);
+  assert.equal(await readFile(options.saveFile, 'utf8'), roleBytes);
+  await rm(options.martialSaveFile, { recursive: true });
+  await rename(backup, options.martialSaveFile);
+  assert.equal((await fetch(`${base}/api/martial-state/unequip`, { method: 'POST' })).status, 200);
+  assert.equal((await getState(base)).state.task.current, 1);
+  assert.equal((await getState(base)).state.slots[0].skillId, null);
+});
+
+test('unequip before first equip keeps incomplete task; invalid body and binding mismatch do not mutate', async (t) => {
+  const options = await fixture(t);
+  const base = await start(t, { ...options, martialCheckpoint: checkpoint });
+  const before = await readFile(options.martialSaveFile, 'utf8');
+  const response = await fetch(`${base}/api/martial-state/unequip`, { method: 'POST' });
+  assert.equal((await response.json()).state.task.current, 0);
+  assert.equal(await readFile(options.martialSaveFile, 'utf8'), before);
+  assert.equal((await fetch(`${base}/api/martial-state/unequip`, { method: 'POST', body: '{}' })).status, 400);
+  assert.equal((await fetch(`${base}/api/martial-state/unequip`)).status, 405);
+  await fetch(`${base}/api/character`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...character, name: '不同绑定' }),
+  });
+  const mismatch = await fetch(`${base}/api/martial-state/unequip`, { method: 'POST' });
+  assert.equal(mismatch.status, 409);
+  assert.deepEqual(await mismatch.json(), { error: 'martial_checkpoint_character_mismatch' });
+  assert.equal(await readFile(options.martialSaveFile, 'utf8'), before);
+});
+
+test('unequip cannot create a checkpoint for an ordinary character', async (t) => {
+  const options = await fixture(t);
+  const base = await start(t, options);
+  const response = await fetch(`${base}/api/martial-state/unequip`, { method: 'POST' });
+  assert.equal(response.status, 404);
+  assert.deepEqual(await response.json(), { error: 'martial_checkpoint_not_initialized' });
+  await assert.rejects(access(options.martialSaveFile), { code: 'ENOENT' });
+});

@@ -62,18 +62,21 @@ export async function createMartialStore({ file, checkpoint, character }) {
     };
   }
   let queue = Promise.resolve();
+  function setEquipped(equipped, getCharacter) {
+    const operation = queue.then(async () => {
+      const character = getCharacter();
+      const state = stateFor(character);
+      const taskComplete = saved.taskComplete || equipped;
+      if (saved.equipped === equipped && saved.taskComplete === taskComplete) return state;
+      await persist({ ...saved, equipped, taskComplete });
+      return stateFor(character);
+    });
+    queue = operation.catch(() => {});
+    return operation;
+  }
   return {
     get: stateFor,
-    equip(getCharacter) {
-      const operation = queue.then(async () => {
-        const character = getCharacter();
-        const state = stateFor(character);
-        if (saved.equipped && saved.taskComplete) return state;
-        await persist({ ...saved, equipped: true, taskComplete: true });
-        return stateFor(character);
-      });
-      queue = operation.catch(() => {});
-      return operation;
-    },
+    equip: (getCharacter) => setEquipped(true, getCharacter),
+    unequip: (getCharacter) => setEquipped(false, getCharacter),
   };
 }

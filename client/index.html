@@ -30,9 +30,9 @@
       <dl><div><dt>角色名称</dt><dd id="saved-name"></dd></div><div><dt>性别</dt><dd id="saved-appearance"></dd></div></dl><p id="checkpoint-message" class="status" role="status"></p><button id="open-equipment" class="primary" type="button" hidden>武学</button><button id="retry-checkpoint" class="secondary" type="button" hidden>重新读取武学</button><button id="open-martial" class="primary" type="button">武学图鉴</button>
     </section>
     <section id="equipment-panel" hidden aria-labelledby="equipment-title">
-      <h2 id="equipment-title">武学</h2>
+      <div class="equipment-heading"><h2 id="equipment-title">武学</h2><button id="edit-equipment" class="secondary" type="button" aria-pressed="false">编辑</button></div>
       <ol id="equipment-slots" class="equipment-slots" aria-label="武学槽位"></ol>
-      <h3>已拥有</h3>
+      <p id="equipment-edit-hint" class="reference-note" hidden>点击槽位右上角可卸下武学</p><h3>已拥有</h3>
       <div id="equipment-owned" class="equipment-owned"></div>
       <p id="equipment-task" class="equipment-task" aria-live="polite"></p>
       <button id="auto-equip" class="primary" type="button">一键装配</button>

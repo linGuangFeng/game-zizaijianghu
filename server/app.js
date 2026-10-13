@@ -66,12 +66,13 @@ export async function createApp({ saveFile, clientDirectory, martialSaveFile = `
           ? json(response, 200, { state: martialStore.get(store.get()) })
           : json(response, 405, { error: 'method_not_allowed' });
       }
-      if (pathname === '/api/martial-state/auto-equip') {
+      if (pathname === '/api/martial-state/auto-equip' || pathname === '/api/martial-state/unequip') {
         if (request.method !== 'POST') return json(response, 405, { error: 'method_not_allowed' });
         let bytes = 0;
         for await (const chunk of request) bytes += chunk.length;
         if (bytes !== 0) return json(response, 400, { error: 'empty_body_required' });
-        return json(response, 200, { state: await martialStore.equip(() => store.get()) });
+        const action = pathname.endsWith('/unequip') ? martialStore.unequip : martialStore.equip;
+        return json(response, 200, { state: await action(() => store.get()) });
       }
       if (pathname === '/api/character') {
         if (request.method === 'GET') {

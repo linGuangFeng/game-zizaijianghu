@@ -15,4 +15,5 @@
 "MARTIAL-REF","武学只读图鉴接口与页面","客户端/服务端/QA及主会话","VERIFIED","DISC-02","docs/martial-qa.md与图鉴页面","独立接口7项及主会话页面点击通过；不是装配或原版视觉通过"
 "MARTIAL-EQUIP-DISC","原版武学装配流程取证","主会话","VERIFIED","MARTIAL-REF","docs/martial-evidence.md及装配前后证据","已取一键装配、编辑卸下及任务不回退、锁槽提示；原版重登装配仍待取证"
 "MARTIAL-EQUIP-DEV","显式检查点一键装配实现","客户端/服务端/QA及主会话","VERIFIED","MARTIAL-EQUIP-DISC","docs/martial-equip-qa.md","独立接口9项及真实页面点击通过；完整美术和前序任务未还原"
-"MARTIAL-UNEQUIP-DEV","编辑卸下与任务完成保持","客户端/服务端/QA及主会话","READY","MARTIAL-EQUIP-DEV","原版已取证卸下流程的实现及双层测试","按现有卸下证据实现，不扩展未知拖动/升级"
+"MARTIAL-UNEQUIP-DEV","编辑卸下与任务完成保持","客户端/服务端/QA及主会话","VERIFIED","MARTIAL-EQUIP-DEV","docs/martial-unequip-qa.md","独立接口8项和页面编辑/失败重试/重启通过；不扩展未知拖动/升级"
+"EVENT-01-DISC","江湖事件1与主线后续取证","主会话及需求","RUNNING","MARTIAL-UNEQUIP-DEV","首场事件入口及结果证据","原版已进入事件加载；先确认实际玩法再派实现"

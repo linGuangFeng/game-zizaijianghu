@@ -60,3 +60,7 @@ dd { margin: 0; overflow-wrap: anywhere; }
 #equipment-panel > button { width: 100%; margin-top: 12px; }
 #equipment-panel .primary { background: #9a753d; border-color: #927141; }
 #retry-checkpoint { width: 100%; margin-top: 10px; }
+.equipment-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.equipment-heading h2 { margin: 0; }
+.equipment-heading button { min-height: 36px; padding: 7px 10px; font-size: 13px; }
+.slot .unequip-button { position: absolute; right: -5px; top: -8px; min-height: 24px; width: 24px; height: 24px; padding: 0; border-radius: 50%; border: 1px solid #f5d5cf; color: #fff; background: #a94643; line-height: 20px; font-size: 20px; z-index: 1; }

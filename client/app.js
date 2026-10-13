@@ -206,9 +206,15 @@ byId('back-martial-list').addEventListener('click', () => {
 
 
 let equipping = false;
+let editingEquipment = false;
+let equipmentState = null;
 const equippedSkillNames = { 'uppercut-reference': '上勾拳' };
 
 function displayCheckpoint(state) {
+  equipmentState = state;
+  byId('edit-equipment').textContent = editingEquipment ? '退出编辑' : '编辑';
+  byId('edit-equipment').setAttribute('aria-pressed', String(editingEquipment));
+  byId('equipment-edit-hint').hidden = !editingEquipment;
 
   byId('equipment-slots').replaceChildren();
   for (const slot of state.slots) {
@@ -220,6 +226,16 @@ function displayCheckpoint(state) {
     number.textContent = String(slot.position);
     item.setAttribute('aria-label', `槽位 ${slot.position}：${slot.locked ? '锁定' : slot.skillId ? equippedSkillNames[slot.skillId] : '空'}`);
     item.append(label, number);
+    if (editingEquipment && slot.position === 1 && slot.skillId) {
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'unequip-button';
+      remove.textContent = '×';
+      remove.setAttribute('aria-label', '卸下上勾拳');
+      remove.disabled = equipping;
+      remove.addEventListener('click', unequipMartial);
+      item.append(remove);
+    }
     byId('equipment-slots').append(item);
   }
   byId('equipment-owned').replaceChildren();
@@ -248,6 +264,8 @@ async function readCheckpoint() {
   byId('retry-checkpoint').hidden = true;
   byId('retry-equipment').hidden = true;
   byId('auto-equip').disabled = true;
+  byId('edit-equipment').disabled = true;
+  for (const button of byId('equipment-slots').querySelectorAll('button')) button.disabled = true;
   try {
     const response = await fetch('/api/martial-state');
     if (response.status === 404) {
@@ -265,6 +283,8 @@ async function readCheckpoint() {
     displayCheckpoint((await response.json()).state);
     byId('open-equipment').hidden = false;
     byId('auto-equip').disabled = false;
+    byId('edit-equipment').disabled = false;
+    for (const button of byId('equipment-slots').querySelectorAll('button')) button.disabled = false;
     if (!byId('equipment-panel').hidden) status('');
   } catch (error) {
     const message = error.message === 'mismatch' ? '武学记录与当前角色不匹配。' : '武学读取失败，请重试。';
@@ -278,6 +298,7 @@ async function readCheckpoint() {
 }
 
 byId('open-equipment').addEventListener('click', () => {
+  editingEquipment = false;
   showPanel('equipment-panel');
   byId('title').textContent = '武学';
   status('正在读取武学……');
@@ -294,6 +315,8 @@ byId('auto-equip').addEventListener('click', async () => {
   if (equipping) return;
   equipping = true;
   byId('auto-equip').disabled = true;
+  byId('edit-equipment').disabled = true;
+  for (const button of byId('equipment-slots').querySelectorAll('button')) button.disabled = true;
   byId('back-equipment').disabled = true;
   status('正在装配……');
   try {
@@ -306,6 +329,37 @@ byId('auto-equip').addEventListener('click', async () => {
   } finally {
     equipping = false;
     byId('auto-equip').disabled = false;
+    byId('edit-equipment').disabled = false;
+    for (const button of byId('equipment-slots').querySelectorAll('button')) button.disabled = false;
     byId('back-equipment').disabled = false;
   }
 });
+
+byId('edit-equipment').addEventListener('click', () => {
+  editingEquipment = !editingEquipment;
+  displayCheckpoint(equipmentState);
+});
+
+async function unequipMartial() {
+  if (equipping) return;
+  equipping = true;
+  byId('auto-equip').disabled = true;
+  byId('edit-equipment').disabled = true;
+  byId('back-equipment').disabled = true;
+  for (const button of byId('equipment-slots').querySelectorAll('button')) button.disabled = true;
+  status('正在卸下……');
+  try {
+    const response = await fetch('/api/martial-state/unequip', { method: 'POST' });
+    if (!response.ok) throw new Error('unequip_failed');
+    displayCheckpoint((await response.json()).state);
+    status('卸下成功');
+  } catch {
+    status('卸下失败，请重试。', true);
+  } finally {
+    equipping = false;
+    byId('auto-equip').disabled = false;
+    byId('edit-equipment').disabled = false;
+    byId('back-equipment').disabled = false;
+    for (const button of byId('equipment-slots').querySelectorAll('button')) button.disabled = false;
+  }
+}
