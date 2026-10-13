@@ -73,7 +73,7 @@ export async function createApp({ saveFile, clientDirectory, martialSaveFile = `
   if ([resolve(saveFile), resolve(martialSaveFile), resolve(realmSaveFile)].includes(resolve(gearSaveFile))) throw new Error('Gear save must use a separate file.');
   const store = await createCharacterStore(saveFile);
   const martialStore = await createMartialStore({ file: martialSaveFile, checkpoint: martialCheckpoint, character: store.get() });
-  const realmStore = await createRealmStore({ file: realmSaveFile, checkpoint: realmCheckpoint, character: store.get() });
+  const realmStore = await createRealmStore({ file: realmSaveFile, checkpoint: realmCheckpoint, character: store.get(), storage: store.realmStorage() });
   const gearStore = await createGearStore({ file: gearSaveFile, checkpoint: gearCheckpoint, character: store.get() });
   const clientRoot = resolve(clientDirectory);
   return createServer(async (request, response) => {
@@ -81,6 +81,10 @@ export async function createApp({ saveFile, clientDirectory, martialSaveFile = `
       let pathname;
       try { pathname = decodeURIComponent(request.url.split('?')[0]); }
       catch { return json(response, 400, { error: 'invalid_path' }); }
+      if (pathname === '/api/assets') {
+        if (request.method !== 'GET') return json(response, 405, { error: 'method_not_allowed' });
+        return json(response, 200, { state: store.getAssets() });
+      }
       if (pathname === '/api/health' && request.method === 'GET') return json(response, 200, { status: 'ok', scope: 'local-foundation' });
       if (pathname === '/api/appearance-options' && request.method === 'GET') return json(response, 200, { options: appearanceOptions });
       if (pathname === '/api/reference/martial-catalog') {

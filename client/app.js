@@ -17,6 +17,7 @@ function showPanel(id) {
   document.querySelector('.game-shell').classList.toggle('is-jianghu', id === 'jianghu-panel');
   byId('portrait-area').hidden = id === 'martial-list' || id === 'martial-detail' || id === 'equipment-panel' || id === 'jianghu-panel' || id === 'realm-panel' || id === 'gear-panel' || id === 'breakthrough-panel' || id === 'player-martial-detail' || id === 'ninth-training-panel' || id === 'commerce-panel';
   for (const panel of panels) byId(panel).hidden = panel !== id;
+  if (id === 'saved-step' || id === 'commerce-panel') readAssets();
 }
 
 function updateAppearance() {
@@ -524,6 +525,7 @@ async function readRealm() {
     const result = await response.json();
     if (request !== realmRequest) return;
     displayRealm(result.state);
+    readAssets();
     realmReady = true;
     byId('open-realm').hidden = false;
     byId('realm-entry-message').textContent = '';
@@ -541,6 +543,7 @@ async function readRealm() {
 async function trainRealm(training) {
   if (realmBusy || !realmReady) return;
   realmBusy = true;
+  markAssetsPending();
   ++realmRequest;
   realmControls();
   realmMessage('正在修炼……');
@@ -576,6 +579,7 @@ async function trainRealm(training) {
     byId('retry-realm').hidden = false;
   } finally {
     realmBusy = false;
+    readAssets();
     realmControls();
   }
 }
@@ -808,6 +812,7 @@ async function readBreakthrough() {
     const result = await response.json();
     if (request !== breakthroughRequest) return;
     displayBreakthrough(result.state);
+    readAssets();
     breakthroughReady = true;
     byId('open-breakthrough').hidden = false;
     byId('breakthrough-entry-message').textContent = '';
@@ -828,6 +833,7 @@ async function readBreakthrough() {
 async function writeBreakthrough(conditionId) {
   if (breakthroughBusy || !breakthroughReady) return;
   breakthroughBusy = true;
+  markAssetsPending();
   ++breakthroughRequest;
   breakthroughControls();
   byId('breakthrough-reward').hidden = true;
@@ -869,6 +875,7 @@ async function writeBreakthrough(conditionId) {
     byId('retry-breakthrough').hidden = false;
   } finally {
     breakthroughBusy = false;
+    readAssets();
     breakthroughControls();
   }
 }
@@ -1001,6 +1008,7 @@ function displayNinthTraining(state) {
 async function trainNinth(training) {
   if (breakthroughBusy || !breakthroughReady) return;
   breakthroughBusy = true;
+  markAssetsPending();
   ++breakthroughRequest;
   breakthroughControls();
   byId('ninth-message').textContent = '正在修炼……';
@@ -1033,6 +1041,7 @@ async function trainNinth(training) {
     byId('retry-ninth').hidden = false;
   } finally {
     breakthroughBusy = false;
+    readAssets();
     breakthroughControls();
   }
 }
@@ -1112,6 +1121,7 @@ async function readCommerce() {
     const result = await response.json();
     if (request !== commerceRequest) return;
     displayCommerce(result.state);
+    readAssets();
     commerceReady = true;
     byId('open-test-commerce').hidden = false;
     byId('commerce-entry-message').textContent = '';
@@ -1129,6 +1139,7 @@ async function readCommerce() {
 async function writeCommerce(purchase) {
   if (commerceBusy || !commerceReady) return;
   commerceBusy = true;
+  markAssetsPending();
   ++commerceRequest;
   commerceControls();
   byId('commerce-message').textContent = purchase ? '正在完成测试支付……' : '正在领取首日奖励……';
@@ -1156,6 +1167,7 @@ async function writeCommerce(purchase) {
     byId('retry-commerce').hidden = false;
   } finally {
     commerceBusy = false;
+    readAssets();
     commerceControls();
   }
 }
@@ -1172,3 +1184,78 @@ byId('commerce-claim').addEventListener('click', () => writeCommerce(false));
 byId('retry-commerce').addEventListener('click', readCommerce);
 byId('retry-commerce-entry').addEventListener('click', readCommerce);
 byId('back-commerce').addEventListener('click', showRealmProfile);
+
+let assetsRequest = 0;
+const assetSourceNames = {
+  'local-test-day1': '测试充值首日奖励',
+  'realm-import': '既有阅历记录',
+  'realm-training': '境界修炼',
+};
+
+function assetSections() {
+  return document.querySelectorAll('.asset-summary');
+}
+
+function markAssetsPending() {
+  ++assetsRequest;
+  for (const section of assetSections()) {
+    section.querySelector('.asset-message').textContent = '资产变化待确认……';
+    section.querySelector('.asset-accounts').replaceChildren();
+    section.querySelector('.asset-entries').replaceChildren();
+    section.querySelector('.retry-assets').hidden = true;
+  }
+}
+
+function displayAssets(state) {
+  const names = new Map(state.accounts.map((account) => [account.id, account.name]));
+  for (const section of assetSections()) {
+    const accounts = section.querySelector('.asset-accounts');
+    accounts.replaceChildren();
+    for (const account of state.accounts) {
+      const value = account.total === null ? `总量未知；已记录可用新增量 ${account.available}` : `实际余额 ${account.total}`;
+      addFact(accounts, account.name, value);
+    }
+    const entries = section.querySelector('.asset-entries');
+    entries.replaceChildren();
+    for (const entry of state.entries) {
+      const item = document.createElement('li');
+      item.textContent = `${names.get(entry.assetId)} ${entry.delta >= 0 ? '+' : ''}${entry.delta} · ${assetSourceNames[entry.source]}`;
+      entries.append(item);
+    }
+    section.querySelector('.asset-message').textContent = state.entries.length ? '以下变动有记录；未知历史总量不计入余额。' : '暂无新增或消耗记录。';
+    section.querySelector('.retry-assets').hidden = true;
+  }
+}
+
+async function readAssets() {
+  const request = ++assetsRequest;
+  for (const section of assetSections()) {
+    section.querySelector('.asset-message').textContent = '正在读取资产……';
+    section.querySelector('.retry-assets').hidden = true;
+  }
+  try {
+    const response = await fetch('/api/assets');
+    const result = await response.json();
+    if (request !== assetsRequest) return;
+    if (response.status === 404) {
+      for (const section of assetSections()) {
+        section.querySelector('.asset-accounts').replaceChildren();
+        section.querySelector('.asset-entries').replaceChildren();
+        section.querySelector('.asset-message').textContent = '暂无可确认的资产记录。';
+      }
+      return;
+    }
+    if (!response.ok) throw new Error(result.error === 'assets_character_mismatch' ? 'mismatch' : 'read_failed');
+    displayAssets(result.state);
+  } catch (error) {
+    if (request !== assetsRequest) return;
+    for (const section of assetSections()) {
+      section.querySelector('.asset-accounts').replaceChildren();
+      section.querySelector('.asset-entries').replaceChildren();
+      section.querySelector('.asset-message').textContent = error.message === 'mismatch' ? '资产记录与当前角色不匹配，请重新读取。' : '资产读取失败，请重新读取。';
+      section.querySelector('.retry-assets').hidden = false;
+    }
+  }
+}
+
+for (const button of document.querySelectorAll('.retry-assets')) button.addEventListener('click', readAssets);

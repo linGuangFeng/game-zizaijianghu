@@ -50,11 +50,11 @@ export class RealmStateError extends Error {
     this.errorCode = errorCode;
   }
 }
-export async function createRealmStore({ file, checkpoint, character }) {
+export async function createRealmStore({ file, checkpoint, character, storage }) {
   if (checkpoint !== undefined && !['observed-before-training', breakthroughCheckpoint].includes(checkpoint)) throw new Error('Unknown local realm checkpoint.');
   let saved = null;
   try {
-    saved = JSON.parse(await readFile(file, 'utf8'));
+    saved = storage ? storage.load() : JSON.parse(await readFile(file, 'utf8'));
     if (!['observed-before-training', breakthroughCheckpoint].includes(saved?.checkpoint) || !isCharacter(saved.character)
       || (saved.checkpoint === breakthroughCheckpoint && !validBreakthrough(saved))
       || !Number.isSafeInteger(saved.revision) || saved.revision < 0
@@ -66,6 +66,7 @@ export async function createRealmStore({ file, checkpoint, character }) {
     }
   } catch (error) { if (error.code !== 'ENOENT') throw error; }
   async function persist(next) {
+    if (storage) { await storage.persist(next); saved = next; return; }
     await mkdir(dirname(file), { recursive: true });
     const temporary = `${file}.${randomUUID()}.tmp`;
     try {
@@ -137,8 +138,14 @@ export async function createRealmStore({ file, checkpoint, character }) {
     };
   }
   let queue = Promise.resolve();
+  function enqueue(action) {
+    if (storage) return storage.enqueue(action);
+    const operation = queue.then(action);
+    queue = operation.catch(() => {});
+    return operation;
+  }
   function breakthroughAction(conditionId, expectedRevision, getCharacter) {
-    const operation = queue.then(async () => {
+    const operation = enqueue(async () => {
       const character = getCharacter();
       const state = breakthroughStateFor(character);
       if (saved.revision !== expectedRevision) throw new RealmStateError(409, 'realm_revision_conflict');
@@ -157,7 +164,7 @@ export async function createRealmStore({ file, checkpoint, character }) {
     return operation;
   }
   function trainNinth(trainingId, expectedRevision, getCharacter) {
-    const operation = queue.then(async () => {
+    const operation = enqueue(async () => {
       const character = getCharacter();
       const state = breakthroughStateFor(character);
       if (saved.revision !== expectedRevision) throw new RealmStateError(409, 'realm_revision_conflict');
@@ -187,7 +194,7 @@ export async function createRealmStore({ file, checkpoint, character }) {
     claimBreakthrough: breakthroughAction,
     advanceBreakthrough: (revision, getCharacter) => breakthroughAction(null, revision, getCharacter),
     train(trainingId, expectedRevision, getCharacter) {
-      const operation = queue.then(async () => {
+      const operation = enqueue(async () => {
         const character = getCharacter();
         stateFor(character);
         if (saved.revision !== expectedRevision) throw new RealmStateError(409, 'realm_revision_conflict');

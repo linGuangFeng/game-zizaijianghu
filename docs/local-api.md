@@ -654,7 +654,7 @@ skillId只允许上勾拳，expectedRevision为当前非负安全整数版本。
 }
 ```
 
-minorUnits为人民币分，600表示¥6。grants只表示本次首日领取记录；接口没有钱包总余额、可消费余额或已拥有武学字段。原账号tooltip的元宝0、宝典令19不能作为本地角色初始余额。
+minorUnits为人民币分，600表示¥6。grants始终表示本次首日领取记录，此接口没有钱包总余额、可消费余额或已拥有武学字段。旧模式不会据此启用资产；显式迁为schema2后，另由下节 `/api/assets` 查询已入账的可用数量。原账号tooltip的元宝0、宝典令19不能作为本地角色初始余额。
 
 ### 测试购买
 
@@ -698,11 +698,11 @@ orderId为非空字符串，expectedRevision为非负安全整数。有效首次
 }
 ```
 
-另两条id尾部分别为baodian-token-reference、yuanbao-reference。这些记录尚未接入可用武学、装备槽、抽取票券或可消费总钱包；不会改写武学/境界/装备文件，也不把境界宝典令receipts累加为总余额。购买不自动领取，首日之外无领取动作，后两日条件与权益未实现。
+另两条id尾部分别为baodian-token-reference、yuanbao-reference。旧纯角色/schema1模式仅保存这些记录，不生成可用资产。schema2模式会在同一次领取事务中将宝典令40和元宝60入来源账本，详情见下节；荡剑式仍不是可用武学。领取不改写武学/境界/装备侧档，也不把境界宝典令receipts累加为总余额。购买不自动领取，首日之外无领取动作，后两日条件与权益未实现。
 
 ### 主文件兼容与事务
 
-使用既有CHARACTER_SAVE_FILE，不新增订单sidecar或检查点。旧纯角色 `{name,appearanceId}` 正常读取，GET不迁移；首次测试购买才以一次原子写变为：
+使用既有CHARACTER_SAVE_FILE，不新增订单sidecar或检查点。旧纯角色 `{name,appearanceId}` 正常读取，GET不迁移；尚未显式迁移的旧纯角色首次测试购买才以一次原子写变为：
 
 ```json
 {
@@ -743,3 +743,89 @@ orderId为非空字符串，expectedRevision为非负安全整数。有效首次
 本轮全部开发回归75/75通过，其中测试购买新增7项；独立真实HTTP QA 10/10通过，见 [本地测试购买独立QA](test-commerce-qa.md)。覆盖旧角色GET零迁移、购买/领取分别失败原子、并发防重、角色PUT保留权益、绑定冲突、其他存档隔离、真实新进程恢复与非法输入。
 
 主会话已报告内部浏览器本轮范围通过，页面路径由QA补录到同一报告；本段不把独立HTTP代理写成浏览器执行者。当前完成的是普通角色可进入的本地测试订单→首日权益记录闭环，不是原版真实支付验收，也不是可消费资源、荡剑式玩法、后两日领取或正常主线解锁完成。
+
+
+## 显式统一资产与境界存档（schema2）
+
+这是本地存档整合，不代表自然主线或资源授予已经完成。旧普通角色与schema1订单仍按上节工作；购买、领取和GET均不会自动启用assets。必须停止使用目标存档的服务，显式执行一次离线迁移。新角色资源未知，不默认赠币、材料或阅历。
+
+### 离线迁移
+
+```powershell
+node server/migrate-assets.js --character "D:/path/character.json"
+node server/migrate-assets.js --character "D:/path/character.json" --realm "D:/path/character.json.realm.json"
+```
+
+以上为二选一的首次操作示例，不是顺序执行。`--character`必需，`--realm`可选；CLI参数顺序如上。角色必须已存在；选中的境界文件必须合法、绑定同一角色，且不是角色文件本身。工具不会创建检查点，也不将不同检查点拼成自然历史。迁移成功输出 `{state:资产状态}`，失败以非零退出码及错误信息结束。不要对正在运行的存档执行CLI。
+
+选realm时保存其原始文件字节SHA-256到 `migration.realmDigest`；不选时为字符串`none`。同一来源摘要再次执行为无写入返回；摘要变化或后来追加realm均拒绝。一次迁移需要选好是否包含realm，本轮不支持向已迁移主档追加境界域。原侧档保留、不删除。迁入后应用优先使用主档内realm，不再读写该realm侧档；未迁入的境界仍使用原侧档模式。
+
+主档外壳如下（entries、commerce及realm内部内容按实际状态保存）：
+
+```json
+{
+  "schemaVersion":2,
+  "character":{"name":"本地角色名","appearanceId":"male-reference-0002"},
+  "commerce":null,
+  "assets":{
+    "boundCharacter":{"name":"本地角色名","appearanceId":"male-reference-0002"},
+    "revision":0,"entries":[]
+  },
+  "domains":{},
+  "migration":{"realmDigest":"none"}
+}
+```
+
+原订单存在时保留commerce全部内容；选择realm时 `domains.realm` 原样保存所选境界状态。迁移只将已领取首日的宝典令、元宝记录分别入账一次；荡剑式继续作为commerce权益记录。选中realm的精确阅历余额作为有来源的期初记录，不从截图缩写反推数值。突破宝典令receipts、武学材料/成长、装备仍未并入资产账本。
+
+### 读取资产
+
+`GET /api/assets` 返回200 `{state:...}`。以下为领取过首日且迁入120阅历样本后的示意；revision以实际提交为准：
+
+```json
+{
+  "state":{
+    "kind":"local-assets","revision":1,
+    "accounts":[
+      {"id":"baodian-token-reference","name":"宝典令","total":null,"available":40},
+      {"id":"yuanbao-reference","name":"元宝","total":null,"available":60},
+      {"id":"jianghu-experience","name":"江湖阅历","total":120,"available":120}
+    ],
+    "entries":[
+      {"id":"realm-import:来源SHA256","assetId":"jianghu-experience","delta":120,"source":"realm-import"},
+      {"id":"订单UUID:day1:baodian-token-reference","assetId":"baodian-token-reference","delta":40,"source":"local-test-day1"},
+      {"id":"订单UUID:day1:yuanbao-reference","assetId":"yuanbao-reference","delta":60,"source":"local-test-day1"}
+    ]
+  }
+}
+```
+
+宝典令、元宝的total始终null，表示总余额未知；available仅表示已记录来源内的可用数量。无领取记录时available可为0，但不能称总余额0。阅历账户仅在选realm迁移后出现，total与available均为该本地境界精确余额。accounts由entries计算，GET不落盘。
+
+| source | 语义 | delta |
+| --- | --- | --- |
+| local-test-day1 | 本地测试首日领取 | 宝典令40或元宝60，按grant ID去重 |
+| realm-import | 既有本地境界余额迁入 | 迁入时精确阅历，允许0 |
+| realm-training | 已实现境界修炼扣费 | 初入江湖-12，九品已支持训练-16 |
+
+流水id用于来源去重；训练id为 `realm-training:境界提交revision`。当前没有宝典令抽取或元宝消费接口，不能把有来源可用记录说成完整经济系统。
+
+### 事务、版本与兼容
+
+迁入realm后，旧 `/api/realm-state` 与 `/api/breakthrough-state` 读取/动作路径及请求响应保持不变；训练的阅历扣减、属性计数和资产负流水共用角色store队列，通过主文件一次临时文件替换提交。失败时账本与境界内存均不更新，仍可用原境界revision重试。realm领取与突破也写同一主文件，但本轮不将其宝典令receipts兑换为资产。
+
+schema2首次首日领取同一次提交commerce三条grants和两条资产正流水；重领按原commerce版本与幂等约定处理，不重复入账。旧schema1领取仍仅保存grants，随后显式迁移才导入已领取记录。角色PUT保留commerce/assets/domains；改名或改外观不自动重绑或清空资源。
+
+assets.revision只描述资产账本变动，不是全域总revision，也不替代commerce或realm的expectedRevision。购买订单、角色PUT、无资产变化的突破领取/突破动作不会增加assets.revision；一次首日两种资产入账只增加1，训练扣费增加1，幂等无写不增加。迁移期初资产版本从0开始，导入已有首日权益会增为1。
+
+| 状态 / error | 含义 |
+| --- | --- |
+| 404 character_not_found | 无本地角色 |
+| 404 assets_not_initialized | 角色尚未显式迁为schema2 |
+| 409 assets_character_mismatch | 当前角色与资产绑定不符，保留原数据 |
+| 405 method_not_allowed | assets路径只支持GET |
+| 500 local_operation_failed | 本地提交等操作失败，遵循原API错误处理 |
+
+各写端点仍使用其原有输入、绑定与版本错误；assets没有独立写HTTP接口。旧纯角色/schema1和schema2的 `/api/character` 返回形状均不变。损坏主档或迁入realm与账本余额不一致时拒绝启动，不以读时修复覆盖文件。
+
+本轮开发回归82/82通过，含7项统一资产测试：重复迁移、GET零写、迁入后侧档停用、并发单扣、主文件失败原子性、首日到账、绑定及真实进程恢复。页面和独立HTTP验收另由对应角色记录，开发测试不替代页面验收。
