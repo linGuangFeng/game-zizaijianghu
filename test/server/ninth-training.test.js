@@ -4,9 +4,11 @@ import { mkdtemp, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promise
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { once } from 'node:events';
-import { spawn } from 'node:child_process';
+import { spawn, execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { createApp } from '../../server/app.js';
+import { migrateAssets } from '../../server/migrate-assets.js';
 const character = { name: '九品隔离测试', appearanceId: 'male-reference-0002' };
 async function fixture(t, experience = 120) {
   const directory = await mkdtemp(join(tmpdir(), 'ninth-test-'));
@@ -61,14 +63,14 @@ test('observed 10/13/16 counts automatically promote at39 once, with all transac
   assert.deepEqual(responses.map((response) => response.status).sort(), [200, 409]);
   const final = await state(base); assert.equal(final.revision, 43); assert.equal(final.resource.amount, 296);
   assert.deepEqual(final.realm.attributes, { attack: 70, defense: 38, health: 4760 });
-  assert.equal(final.ninthTraining.stage, 2); assert.equal(final.ninthTraining.supported, false);
+  assert.equal(final.ninthTraining.stage, 2); assert.equal(final.ninthTraining.supported, true);
   assert.deepEqual(final.ninthTraining.progress, { current: 0, target: 54 });
   assert.deepEqual(final.ninthTraining.training.map(({ count }) => count), [10, 13, 16]);
   assert.deepEqual(final.receipts, before.receipts);
   const persisted = JSON.parse(await readFile(options.realmSaveFile, 'utf8'));
   assert.equal(persisted.totalTraining, 30); assert.deepEqual(persisted.counts, { trial: 10, stance: 10, run: 10 });
-  const refused = await train(base, 'trial', 43); assert.equal(refused.status, 409); assert.deepEqual(await refused.json(), { error: 'realm_training_not_observed' });
-  assert.deepEqual(await state(base), final);
+  assert.equal((await train(base, 'trial', 43)).status, 200);
+  assert.deepEqual((await state(base)).ninthTraining.progress, { current: 1, target: 54 });
 });
 
 test('new process restores counts, stage, resources and receipts without default reset', async (t) => {
@@ -103,9 +105,53 @@ test('unadvanced, old training, invalid input and identity mismatch cannot train
 });
 
 test('invalid persisted ninth progress fails loading without overwriting data', async (t) => {
-  for (const ninthTraining of [null, { stage: 1, counts: { trial: 39, stance: 0, run: 0 } }, { stage: 2, counts: { trial: 1, stance: 0, run: 0 } }, { stage: 1, counts: { trial: -1, stance: 0, run: 0 } }]) {
+  for (const ninthTraining of [{ stage: 2, counts: { trial: 93, stance: 0, run: 0 } }, { stage: 3, counts: { trial: 92, stance: 0, run: 0 } }, null, { stage: 1, counts: { trial: 39, stance: 0, run: 0 } }, { stage: 2, counts: { trial: 1, stance: 0, run: 0 } }, { stage: 1, counts: { trial: -1, stance: 0, run: 0 } }]) {
     const options = await fixture(t); const saved = JSON.parse(await readFile(options.realmSaveFile, 'utf8')); saved.ninthTraining = ninthTraining;
     const bytes = JSON.stringify(saved); await writeFile(options.realmSaveFile, bytes);
     await assert.rejects(createApp(options), /Invalid local realm save/); assert.equal(await readFile(options.realmSaveFile, 'utf8'), bytes);
   }
+});
+
+
+test('second stage reaches93 atomically with no extra promotion attributes and persists in unified ledger', async(t)=>{
+  const options=await fixture(t, 880);
+  const source=JSON.parse(await readFile(options.realmSaveFile,'utf8'));
+  source.ninthTraining={stage:2,counts:{trial:10,stance:13,run:16}};
+  source.attributes={attack:70,defense:38,health:4760};
+  await writeFile(options.realmSaveFile,JSON.stringify(source));
+  await migrateAssets(options.saveFile,options.realmSaveFile);
+  const side=await readFile(options.realmSaveFile,'utf8'); const base=await start(t,options);
+  let revision=4;
+  for(let i=0;i<53;i++) assert.equal((await train(base,'trial',revision++)).status,200);
+  const pending=await state(base); assert.deepEqual(pending.ninthTraining.progress,{current:53,target:54});
+  assert.equal(pending.ninthTraining.training[0].count,63); // Display denominator is not an invented cap.
+  const bytes=await readFile(options.saveFile,'utf8');
+  await rename(options.saveFile,options.saveFile+'.bak');await mkdir(options.saveFile);
+  assert.equal((await train(base,'run',revision)).status,500);assert.deepEqual(await state(base),pending);
+  assert.equal(await readFile(options.saveFile+'.bak','utf8'),bytes);
+  await rm(options.saveFile,{recursive:true});await rename(options.saveFile+'.bak',options.saveFile);
+  const results=await Promise.all([train(base,'run',revision),train(base,'run',revision)]);
+  assert.deepEqual(results.map(r=>r.status).sort(),[200,409]);
+  const final=await state(base);assert.equal(final.ninthTraining.stage,3);assert.equal(final.ninthTraining.supported,false);
+  assert.deepEqual(final.ninthTraining.progress,{current:0,target:66});
+  assert.deepEqual(final.realm.attributes,{attack:176,defense:38,health:4870});
+  assert.equal(final.resource.amount,16);assert.deepEqual(final.receipts,source.receipts);
+  const asset=(await (await fetch(base+'/api/assets')).json()).state;
+  assert.equal(asset.accounts.at(-1).available,16);assert.equal(asset.entries.length,55);
+  const refused=await train(base,'run',revision+1);assert.equal(refused.status,409);
+  assert.deepEqual(await refused.json(),{error:'realm_training_not_observed'});
+  assert.deepEqual(await state(base),final);assert.equal(await readFile(options.realmSaveFile,'utf8'),side);
+  const appUrl=new URL('../../server/app.js',import.meta.url).href;
+  const code='import {createApp} from '+JSON.stringify(appUrl)+';const server=await createApp(JSON.parse(process.argv[1]));await new Promise(r=>server.listen(0,"127.0.0.1",r));const response=await fetch("http://127.0.0.1:"+server.address().port+"/api/breakthrough-state");console.log(JSON.stringify(await response.json()));server.close();';
+  const result=await promisify(execFile)(process.execPath,['--input-type=module','-e',code,JSON.stringify(options)]);
+  assert.deepEqual(JSON.parse(result.stdout).state,final);
+});
+
+test('legacy stage2 at39 reads without migration and insufficient balance cannot train',async(t)=>{
+  const options=await fixture(t,15);const saved=JSON.parse(await readFile(options.realmSaveFile,'utf8'));
+  saved.ninthTraining={stage:2,counts:{trial:10,stance:13,run:16}};
+  const bytes=JSON.stringify(saved);await writeFile(options.realmSaveFile,bytes);
+  const base=await start(t,options);const initial=await state(base);assert.equal(initial.ninthTraining.supported,true);
+  const refused=await train(base,'stance',4);assert.deepEqual(await refused.json(),{error:'realm_experience_insufficient'});
+  assert.equal(await readFile(options.realmSaveFile,'utf8'),bytes);
 });

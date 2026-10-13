@@ -20,12 +20,12 @@ function validNinthTraining(data) {
   if (data.ninthTraining === undefined) return true;
   const progress = data.ninthTraining;
   if (!data.advanced || progress === null || typeof progress !== 'object' || Array.isArray(progress)
-    || Object.keys(progress).length !== 2 || ![1, 2].includes(progress.stage)
+    || Object.keys(progress).length !== 2 || ![1, 2, 3].includes(progress.stage)
     || progress.counts === null || typeof progress.counts !== 'object' || Array.isArray(progress.counts)
     || Object.keys(progress.counts).length !== 3
     || !ninthTrainingTypes.every(({ id }) => Number.isInteger(progress.counts[id]) && progress.counts[id] >= 0)) return false;
   const total = Object.values(progress.counts).reduce((sum, count) => sum + count, 0);
-  return progress.stage === 1 ? total < 39 : total === 39;
+  return progress.stage === 1 ? total < 39 : progress.stage === 2 ? total >= 39 && total < 93 : total === 93;
 }
 export const breakthroughConditions = [
   { id: 'event5', label: '通关事件5', current: 1, target: 1 },
@@ -132,8 +132,8 @@ export async function createRealmStore({ file, checkpoint, character, storage })
     const { counts, stage } = ninthProgress(saved);
     const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
     return {
-      stage, stageName: stage === 1 ? '第一重' : '第二重', total, supported: stage === 1,
-      progress: { current: stage === 1 ? total : 0, target: stage === 1 ? 39 : 54 },
+      stage, stageName: ['第一重', '第二重', '第三重'][stage - 1], total, supported: stage < 3,
+      progress: { current: stage === 1 ? total : stage === 2 ? total - 39 : 0, target: [39, 54, 66][stage - 1] },
       training: ninthTrainingTypes.map((training) => ({ ...training, count: counts[training.id] })),
     };
   }
@@ -181,7 +181,7 @@ export async function createRealmStore({ file, checkpoint, character, storage })
         attributes.attack += 10; attributes.defense += 5; attributes.health += 500;
       }
       await persist({ ...saved, revision: saved.revision + 1, experience: saved.experience - training.cost,
-        attributes, ninthTraining: { counts, stage: total === 39 ? 2 : 1 } });
+        attributes, ninthTraining: { counts, stage: total < 39 ? 1 : total < 93 ? 2 : 3 } });
       return breakthroughStateFor(character);
     });
     queue = operation.catch(() => {});

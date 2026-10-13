@@ -469,7 +469,7 @@ npm.cmd start
 
 仍使用 REALM_SAVE_FILE，默认角色文件路径追加 `.realm.json`；不增加领奖文件。只在显式配置且无境界档时初始化。初始样本为初入江湖30/30、三类训练各10次、属性30/15/2000、领悟收益100、江湖阅历120，三项突破条件已达标但均未领取。
 
-已有 `observed-before-training` 文件不会被新flag覆盖或自动升级，GET不迁移。要测试突破应另用隔离角色/存档路径，不删除现有训练进度。旧训练检查点请求突破端点返回404 `breakthrough_checkpoint_not_initialized`；新突破检查点请求 `/api/realm-state` 或 `/api/realm-state/train` 返回404 `realm_training_checkpoint_unavailable`。客户端据此分别开放入口。旧训练检查点的原有响应与训练行为不变，新突破成功也不开放九品训练。
+已有 `observed-before-training` 文件不会被新flag覆盖或自动升级，GET不迁移。要测试突破应另用隔离角色/存档路径，不删除现有训练进度。旧训练检查点请求突破端点返回404 `breakthrough_checkpoint_not_initialized`；新突破检查点请求 `/api/realm-state` 或 `/api/realm-state/train` 返回404 `realm_training_checkpoint_unavailable`。客户端据此分别开放入口。旧训练检查点的原有响应与训练行为不变，突破成功后的九品训练使用下节专用端点，不改变旧训练端点。
 
 ### 精确接口
 
@@ -522,7 +522,7 @@ conditionId 仅允许 event5、martial2、training30。首次成功领取使对�
 {"id":"ninth-early-reference","name":"九品前期","attributes":{"attack":40,"defense":20,"health":2500},"comprehensionGain":150}
 ```
 
-两个POST成功均返回200完整 `{state:...}`。三条流水与已领条件保留，江湖阅历始终120；突破本身不追加奖励流水，不领取主线任务。没有新境界训练次数、下一次突破或资源来源算法。
+两个POST成功均返回200完整 `{state:...}`。三条流水与已领条件保留，突破领取/突破动作本身不扣江湖阅历；仅执行这些动作时仍为120。突破本身不追加奖励流水，不领取主线任务；后续训练见下节，下一次突破及资源来源算法仍未实现。
 
 ### 持久化、版本与错误
 
@@ -552,7 +552,55 @@ expectedRevision为非负安全整数，先检查版本再处理重复动作。�
 
 主会话内部浏览器已实际通过普通角色无入口、显式检查点三项领取、断连后锁写/重启重读、双页领取及突破版本冲突只读恢复；最终revision4、三条唯一流水、江湖阅历120不变。页面证据归主会话，不能将独立HTTP代理未操作浏览器的记录当作该代理页面验收。
 
-当前仍为显式检查点，不代表普通角色已自然完成事件5、装配2本和修炼30次；不实现主线领奖、令牌总余额、下一次突破、新境界训练或完整成长系统。
+当前仍为显式检查点，不代表普通角色已自然完成事件5、装配2本和修炼30次；不实现主线领奖、令牌总余额、下一次突破或完整成长系统；后续已实现训练范围见下节。
+
+## 九品前期第一重、第二重训练
+
+复用已突破的现有境界存档，不新增检查点或资源。第二重连续证据见 [累计修炼123次与第二重训练证据](train123-evidence.md)。第三重只显示已观测到达状态，后续训练尚未实现；这不是原版禁止训练或真实上限。
+
+`POST /api/breakthrough-state/train` 要求JSON，严格为两个字段：
+
+```json
+{"training":"trial","expectedRevision":4}
+```
+
+training允许trial（练武）、stance（聚气）、run（调息）；expectedRevision为非负安全整数。单次成本均16江湖阅历，对应攻击+2、防御+1、气血+110。成功200返回完整 `{state:...}`，realm.attributes、resource、revision和ninthTraining一起更新。GET仍用 `/api/breakthrough-state`；未突破时ninthTraining为null，已突破旧档缺该字段时仅投影第一重三项0，不在GET补写。
+
+ninthTraining格式示例：
+
+```json
+{
+  "stage":2,"stageName":"第二重","total":39,"supported":true,
+  "progress":{"current":0,"target":54},
+  "training":[
+    {"id":"trial","name":"练武","displayTarget":53,"cost":16,"attribute":"attack","gain":2,"count":10},
+    {"id":"stance","name":"聚气","displayTarget":53,"cost":16,"attribute":"defense","gain":1,"count":13},
+    {"id":"run","name":"调息","displayTarget":53,"cost":16,"attribute":"health","gain":110,"count":16}
+  ]
+}
+```
+
+| stage | 累计total范围 | progress | supported |
+| --- | --- | --- | --- |
+| 1 第一重 | 0～38 | total / 39 | true |
+| 2 第二重 | 39～92 | (total-39) / 54 | true |
+| 3 第三重 | 93 | 0 / 66 | false |
+
+三卡count跨重累计，不重置；displayTarget=53仅为已取证展示分母，本地未实现未经测量的单卡53上限。第39次训练自动进入第二重，除当次训练收益外，仅此已证节点追加攻击10、防御5、气血500。第93次自动进入第三重，仅增加当次训练收益，不重复第一重额外属性。不通过突破按钮升重，不授予额外资源，也不推进或领取原版累计修炼123次主线。
+
+持久字段为 `ninthTraining:{stage,counts:{trial,stance,run}}`，计数为非负整数，stage与累计范围须符合上表；旧stage2/total39存档继续合法。原始训练counts/totalTraining与突破receipts保留。仍在侧档模式时一次替换境界侧档；已迁入schema2时同一主文件提交训练、阅历扣除和资产负流水，侧档不写。余额不足、版本冲突或落盘失败均不提交任何部分；并发同版本只有一个成功。GET及写响应均不直接返回assets，客户端另GET资产状态。
+
+| 状态 / error | 含义 |
+| --- | --- |
+| 409 realm_revision_conflict | 版本不符，重读后再由用户决定动作 |
+| 409 realm_breakthrough_required | 尚未完成首次突破 |
+| 409 realm_training_not_observed | 已到第三重，本轮未支持后续训练 |
+| 409 realm_experience_insufficient | 余额不足16，不补资源 |
+| 400 invalid_ninth_training | training、版本或严格正文结构不符 |
+
+角色不存在、检查点不匹配、绑定冲突、JSON/媒体类型/大小、HTTP方法及持久化失败沿用突破接口公共错误。普通角色不会因调用此端点自动取得境界存档。
+
+开发回归84/84通过，第二重独立HTTP QA 8/8通过；覆盖旧stage2读取、余额不足、53/54临界失败与并发、单文件账本同步及真实新进程恢复第三重。页面验证由主会话独立执行，本段不代替其结论。
 
 ## 上勾拳Lv1→2：既有武学存档增量
 
