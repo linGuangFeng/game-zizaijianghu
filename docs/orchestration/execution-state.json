@@ -1,23 +1,23 @@
 {
   "projectComplete": false,
-  "activeWork": "武学图鉴页面已完成内部浏览器验收；等待主协调续接原版装配取证",
+  "activeWork": "本轮原版装配取证、三角色实现和双层验收完成，待接续编辑卸下",
   "lastFailure": "代理结束后未接续；事件仅进入主会话邮箱未及时转交监听",
   "userPaused": false,
-  "nextAction": "主协调复用自身内部浏览器恢复原版连接，采集一键装配及槽位变化；有证据后派发实现",
+  "nextAction": "按docs/martial-evidence.md已确认的编辑红叉卸下行为实现，保留taskComplete；独立接口和页面点击验证后提交",
   "status": "HANDOFF_READY",
-  "updatedAt": "2026-10-13T03:40:34.7087389Z",
+  "updatedAt": "2026-10-13T03:52:21.0381922Z",
   "agents": [
     {
-      "state": "DELIVERED_PENDING_BROWSER_QA",
-      "role": "client"
+      "role": "client",
+      "state": "DELIVERED_VERIFIED"
     },
     {
-      "state": "DELIVERED_COMMITTED",
-      "role": "server"
+      "role": "server",
+      "state": "DELIVERED_VERIFIED"
     },
     {
-      "state": "API_PASSED_UI_PENDING",
-      "role": "qa"
+      "role": "qa",
+      "state": "API_9_PASS_UI_PASS"
     }
   ],
   "blockers": [
