@@ -246,8 +246,16 @@ function displayCheckpoint(state) {
   }
   byId('equipment-owned').replaceChildren();
   for (const skill of state.owned) {
-    const card = document.createElement('div');
+    const canUseCard = editingEquipment && state.checkpoint === 'observed-event1-before-equip';
+    const equippedSlot = state.slots.find((slot) => slot.skillId === skill.id);
+    const card = document.createElement(canUseCard ? 'button' : 'div');
     card.className = 'owned-card';
+    if (canUseCard) {
+      card.type = 'button';
+      card.disabled = equipping;
+      card.setAttribute('aria-label', equippedSlot ? '卸下' + equippedSkillNames[skill.id] + '卡片' : '装配' + equippedSkillNames[skill.id]);
+      card.addEventListener('click', () => equippedSlot ? unequipMartial(equippedSlot.position) : equipMartialSkill(skill.id));
+    }
     const name = document.createElement('strong');
     name.textContent = equippedSkillNames[skill.id];
     const level = document.createElement('span');
@@ -271,7 +279,7 @@ async function readCheckpoint() {
   byId('retry-equipment').hidden = true;
   byId('auto-equip').disabled = true;
   byId('edit-equipment').disabled = true;
-  for (const button of byId('equipment-slots').querySelectorAll('button')) button.disabled = true;
+  for (const button of document.querySelectorAll('#equipment-slots button, #equipment-owned button')) button.disabled = true;
   try {
     const response = await fetch('/api/martial-state');
     if (response.status === 404) {
@@ -290,7 +298,7 @@ async function readCheckpoint() {
     byId('open-equipment').hidden = false;
     byId('auto-equip').disabled = false;
     byId('edit-equipment').disabled = false;
-    for (const button of byId('equipment-slots').querySelectorAll('button')) button.disabled = false;
+    for (const button of document.querySelectorAll('#equipment-slots button, #equipment-owned button')) button.disabled = false;
     if (!byId('equipment-panel').hidden) status('');
   } catch (error) {
     const message = error.message === 'mismatch' ? '武学记录与当前角色不匹配。' : '武学读取失败，请重试。';
@@ -322,7 +330,7 @@ byId('auto-equip').addEventListener('click', async () => {
   equipping = true;
   byId('auto-equip').disabled = true;
   byId('edit-equipment').disabled = true;
-  for (const button of byId('equipment-slots').querySelectorAll('button')) button.disabled = true;
+  for (const button of document.querySelectorAll('#equipment-slots button, #equipment-owned button')) button.disabled = true;
   byId('back-equipment').disabled = true;
   status('正在装配……');
   try {
@@ -336,7 +344,7 @@ byId('auto-equip').addEventListener('click', async () => {
     equipping = false;
     byId('auto-equip').disabled = false;
     byId('edit-equipment').disabled = false;
-    for (const button of byId('equipment-slots').querySelectorAll('button')) button.disabled = false;
+    for (const button of document.querySelectorAll('#equipment-slots button, #equipment-owned button')) button.disabled = false;
     byId('back-equipment').disabled = false;
   }
 });
@@ -352,7 +360,7 @@ async function unequipMartial(position) {
   byId('auto-equip').disabled = true;
   byId('edit-equipment').disabled = true;
   byId('back-equipment').disabled = true;
-  for (const button of byId('equipment-slots').querySelectorAll('button')) button.disabled = true;
+  for (const button of document.querySelectorAll('#equipment-slots button, #equipment-owned button')) button.disabled = true;
   status('正在卸下……');
   try {
     const isTwoSkillCheckpoint = equipmentState.checkpoint === 'observed-event1-before-equip';
@@ -372,6 +380,34 @@ async function unequipMartial(position) {
     byId('auto-equip').disabled = false;
     byId('edit-equipment').disabled = false;
     byId('back-equipment').disabled = false;
-    for (const button of byId('equipment-slots').querySelectorAll('button')) button.disabled = false;
+    for (const button of document.querySelectorAll('#equipment-slots button, #equipment-owned button')) button.disabled = false;
+  }
+}
+
+async function equipMartialSkill(skillId) {
+  if (equipping) return;
+  equipping = true;
+  byId('auto-equip').disabled = true;
+  byId('edit-equipment').disabled = true;
+  byId('back-equipment').disabled = true;
+  for (const button of document.querySelectorAll('#equipment-slots button, #equipment-owned button')) button.disabled = true;
+  status('正在装配……');
+  try {
+    const response = await fetch('/api/martial-state/equip-skill', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ skillId }),
+    });
+    if (!response.ok) throw new Error('equip_failed');
+    displayCheckpoint((await response.json()).state);
+    status('装配成功');
+  } catch {
+    status('装配失败，请重试。', true);
+  } finally {
+    equipping = false;
+    byId('auto-equip').disabled = false;
+    byId('edit-equipment').disabled = false;
+    byId('back-equipment').disabled = false;
+    for (const button of document.querySelectorAll('#equipment-slots button, #equipment-owned button')) button.disabled = false;
   }
 }

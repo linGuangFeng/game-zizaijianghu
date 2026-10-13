@@ -104,6 +104,15 @@ export async function createApp({ saveFile, clientDirectory, martialSaveFile = `
         }
         return json(response, 200, { state: await martialStore.unequipSlot(body.position, () => store.get()) });
       }
+      if (pathname === '/api/martial-state/equip-skill') {
+        if (request.method !== 'POST') return json(response, 405, { error: 'method_not_allowed' });
+        const body = await readJson(request);
+        if (body === null || typeof body !== 'object' || Array.isArray(body)
+          || Object.keys(body).length !== 1 || !['uppercut-reference', 'ruwu-sword-reference'].includes(body.skillId)) {
+          return json(response, 400, { error: 'invalid_martial_skill' });
+        }
+        return json(response, 200, { state: await martialStore.equipSkill(body.skillId, () => store.get()) });
+      }
       if (pathname === '/api/character') {
         if (request.method === 'GET') {
           const character = store.get();

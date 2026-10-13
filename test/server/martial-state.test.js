@@ -407,3 +407,83 @@ test('specified removal rejects unobserved positions, malformed requests and mis
   const single = await start(t, { ...singleOptions, martialCheckpoint: checkpoint });
   assert.equal((await removeSlot(single, 1)).status, 409);
 });
+const equipSkill = (base, skillId) => fetch(`${base}/api/martial-state/equip-skill`, {
+  method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ skillId }),
+});
+test('manual skill equip follows both observed input orders without duplicates and supports reverse removal', async (t) => {
+  const options = await fixture(t);
+  const base = await start(t, { ...options, martialCheckpoint: eventCheckpoint });
+  for (const order of [['uppercut-reference', 'ruwu-sword-reference'], ['ruwu-sword-reference', 'uppercut-reference']]) {
+    await removeSlot(base, 1); await removeSlot(base, 2);
+    for (const id of order) assert.equal((await equipSkill(base, id)).status, 200);
+    const state = (await getState(base)).state;
+    assert.deepEqual(state.slots.slice(0, 2).map((slot) => slot.skillId), order);
+    assert.deepEqual(state.owned.map((skill) => skill.id), order);
+    const bytes = await readFile(options.martialSaveFile, 'utf8');
+    assert.deepEqual(await (await equipSkill(base, order[0])).json(), { state });
+    assert.equal(await readFile(options.martialSaveFile, 'utf8'), bytes);
+    await removeSlot(base, 1);
+    const hole = (await getState(base)).state;
+    assert.deepEqual(hole.slots.slice(0, 2).map((slot) => slot.skillId), [null, order[1]]);
+    assert.equal(hole.owned[0].id, order[1]);
+    await equipSkill(base, order[0]);
+    assert.deepEqual((await getState(base)).state.slots.slice(0, 2).map((slot) => slot.skillId), order);
+    assert.equal((await getState(base)).state.task.current, 1);
+    await equip(base);
+    assert.deepEqual((await getState(base)).state.slots.slice(0, 2).map((slot) => slot.skillId), ['ruwu-sword-reference', 'uppercut-reference']);
+  }
+});
+
+test('manual reverse slots and slot-two-only sword survive real process restarts', async (t) => {
+  const options = await fixture(t);
+  const role = await readFile(options.saveFile, 'utf8');
+  const first = await processServer(t, options, eventCheckpoint);
+  await equipSkill(first.base, 'ruwu-sword-reference');
+  const reverse = await getState(first.base);
+  await first.stop();
+  const second = await processServer(t, options, false);
+  assert.deepEqual(await getState(second.base), reverse);
+  await removeSlot(second.base, 1);
+  const onlySword = await getState(second.base);
+  assert.deepEqual(onlySword.state.slots.slice(0, 2).map((slot) => slot.skillId), [null, 'ruwu-sword-reference']);
+  await second.stop();
+  const third = await processServer(t, options, false);
+  assert.deepEqual(await getState(third.base), onlySword);
+  assert.equal(await readFile(options.saveFile, 'utf8'), role);
+});
+
+test('manual equip failure keeps prior slots and list; invalid ids and mismatched character do not write', async (t) => {
+  const options = await fixture(t);
+  const base = await start(t, { ...options, martialCheckpoint: eventCheckpoint });
+  const before = await getState(base);
+  const bytes = await readFile(options.martialSaveFile, 'utf8');
+  const role = await readFile(options.saveFile, 'utf8');
+  for (const id of [null, 1, '', 'unknown']) assert.equal((await equipSkill(base, id)).status, 400);
+  assert.equal(await readFile(options.martialSaveFile, 'utf8'), bytes);
+  const backup = `${options.martialSaveFile}.backup`;
+  await rename(options.martialSaveFile, backup); await mkdir(options.martialSaveFile);
+  assert.equal((await equipSkill(base, 'ruwu-sword-reference')).status, 500);
+  assert.deepEqual(await getState(base), before);
+  assert.equal(await readFile(backup, 'utf8'), bytes);
+  assert.equal(await readFile(options.saveFile, 'utf8'), role);
+  await rm(options.martialSaveFile, { recursive: true }); await rename(backup, options.martialSaveFile);
+  assert.equal((await equipSkill(base, 'ruwu-sword-reference')).status, 200);
+  const after = await readFile(options.martialSaveFile, 'utf8');
+  await fetch(`${base}/api/character`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...character, name: '变更' }) });
+  assert.equal((await equipSkill(base, 'uppercut-reference')).status, 409);
+  assert.equal(await readFile(options.martialSaveFile, 'utf8'), after);
+});
+
+test('manual equip preserves legacy boolean semantics and rejects unsupported checkpoint', async (t) => {
+  const options = await fixture(t);
+  const bytes = JSON.stringify({ checkpoint: eventCheckpoint, character, twoEquipped: false });
+  await writeFile(options.martialSaveFile, bytes);
+  const base = await start(t, options);
+  await getState(base);
+  assert.equal(await readFile(options.martialSaveFile, 'utf8'), bytes);
+  const manual = (await (await equipSkill(base, 'ruwu-sword-reference')).json()).state;
+  assert.deepEqual(manual.slots.slice(0, 2).map((slot) => slot.skillId), ['uppercut-reference', 'ruwu-sword-reference']);
+  const singleOptions = await fixture(t);
+  const single = await start(t, { ...singleOptions, martialCheckpoint: checkpoint });
+  assert.equal((await equipSkill(single, 'uppercut-reference')).status, 409);
+});

@@ -17,6 +17,8 @@ function validTwoSave(data) {
   const knownStates = [
     { slots: [uppercut, null], ownedOrder: [uppercut, sword] },
     { slots: [sword, uppercut], ownedOrder: [sword, uppercut] },
+    { slots: [uppercut, sword], ownedOrder: [uppercut, sword] },
+    { slots: [null, sword], ownedOrder: [sword, uppercut] },
     { slots: [null, uppercut], ownedOrder: [uppercut, sword] },
     { slots: [sword, null], ownedOrder: [sword, uppercut] },
     { slots: [null, null], ownedOrder: [sword, uppercut] },
@@ -138,9 +140,29 @@ export async function createMartialStore({ file, checkpoint, character }) {
     queue = operation.catch(() => {});
     return operation;
   }
+  function equipSkill(skillId, getCharacter) {
+    const operation = queue.then(async () => {
+      const character = getCharacter();
+      const state = stateFor(character);
+      if (saved.checkpoint !== 'observed-event1-before-equip') {
+        throw new MartialStateError(409, 'martial_action_not_observed');
+      }
+      const current = twoSkillState(saved);
+      if (current.slots.includes(skillId)) return state;
+      const slots = [...current.slots];
+      slots[slots.indexOf(null)] = skillId;
+      const equippedIds = slots.filter((id) => id !== null);
+      const ownedOrder = [...equippedIds, ...[sword, uppercut].filter((id) => !equippedIds.includes(id))];
+      await persistTwo(slots, ownedOrder);
+      return stateFor(character);
+    });
+    queue = operation.catch(() => {});
+    return operation;
+  }
   return {
     get: stateFor,
     unequipSlot,
+    equipSkill,
     equip: (getCharacter) => setEquipped(true, getCharacter),
     unequip: (getCharacter) => setEquipped(false, getCharacter),
   };
