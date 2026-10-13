@@ -1,11 +1,11 @@
 {
   "projectComplete": false,
-  "activeWork": "双武学装配实现和双层验收完成，提交fa88965",
+  "activeWork": "双武学指定槽位卸下实现和双层验收完成，c86726b",
   "lastFailure": "代理结束后未接续；事件仅进入主会话邮箱未及时转交监听",
   "userPaused": false,
-  "nextAction": "MARTIAL-TWO-REMOVE：先取原版全空及手动装配缺口，按已证实目标槽清空而其他槽不前移实现双技能编辑卸下，接口和页面双层验证",
+  "nextAction": "MARTIAL-MANUAL：先取原版反向手动装配与空槽补位，再实现编辑态点击卡片装配并做独立接口和页面验收",
   "status": "HANDOFF_READY",
-  "updatedAt": "2026-10-13T04:12:04.1052647Z",
+  "updatedAt": "2026-10-13T04:20:29.9568973Z",
   "agents": [
     {
       "state": "COMPLETE",
