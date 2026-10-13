@@ -4,7 +4,7 @@
 
 ## 结果与证据
 
-独立实际执行 **10/10 PASS**，仅放行下表接口与离线迁移范围。页面 **NOT_RUN**，由主会话另行验收；不表示原版 1:1 或自然获取材料流程完成。
+独立实际执行 **10/10 PASS**；主会话内部浏览器 **MAQ-UI PASS**，具体页面操作及人工隔离输入见文末补充。本轮仅放行已列接口、离线迁移与页面局部范围，不表示原版 1:1 或自然获取材料流程完成。
 
 - 脚本：`.local/independent-qa/martial-assets-suite/http.mjs`
 - 运行：`node .local/independent-qa/martial-assets-suite/http.mjs`

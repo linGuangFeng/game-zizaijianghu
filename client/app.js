@@ -293,6 +293,8 @@ function displayCheckpoint(state) {
 }
 
 async function readCheckpoint() {
+  byId('continue-martial').hidden = true;
+  byId('open-equipment').hidden = true;
   const request = ++checkpointRequest;
   martialGrowthReady = false;
   byId('upgrade-martial').disabled = true;
@@ -327,6 +329,7 @@ async function readCheckpoint() {
     displayCheckpoint(result.state);
     readAssets();
     byId('open-equipment').hidden = false;
+    byId('continue-martial').hidden = false;
     byId('auto-equip').disabled = false;
     byId('edit-equipment').disabled = false;
     for (const button of document.querySelectorAll('#equipment-slots button, #equipment-owned button')) button.disabled = false;
@@ -456,6 +459,11 @@ byId('open-character').addEventListener('click', () => {
   status('');
 });
 byId('back-jianghu').addEventListener('click', showJianghu);
+byId('continue-martial').addEventListener('click', () => byId('open-equipment').click());
+byId('continue-realm').addEventListener('click', () => byId('open-realm').click());
+byId('continue-breakthrough').addEventListener('click', () => {
+  byId(breakthroughState.advanced ? 'open-ninth-training' : 'open-breakthrough').click();
+});
 
 let realmState = null;
 let realmRequest = 0;
@@ -506,6 +514,7 @@ function displayRealm(state) {
 }
 
 async function readRealm() {
+  byId('continue-realm').hidden = true;
   const request = ++realmRequest;
   realmReady = false;
   realmControls();
@@ -529,6 +538,7 @@ async function readRealm() {
     readAssets();
     realmReady = true;
     byId('open-realm').hidden = false;
+    byId('continue-realm').hidden = false;
     byId('realm-entry-message').textContent = '';
     realmMessage('');
     realmControls();
@@ -787,9 +797,11 @@ function displayBreakthrough(state) {
   byId('breakthrough-result').hidden = !state.advanced;
   byId('open-ninth-training').hidden = !state.ninthTraining;
   displayNinthTraining(state);
+  byId('continue-breakthrough').textContent = state.advanced ? '继续修炼' : '境界突破';
 }
 
 async function readBreakthrough() {
+  byId('continue-breakthrough').hidden = true;
   const request = ++breakthroughRequest;
   breakthroughReady = false;
   breakthroughControls();
@@ -816,6 +828,7 @@ async function readBreakthrough() {
     readAssets();
     breakthroughReady = true;
     byId('open-breakthrough').hidden = false;
+    byId('continue-breakthrough').hidden = false;
     byId('breakthrough-entry-message').textContent = '';
     byId('breakthrough-message').textContent = '';
     byId('ninth-message').textContent = '';
