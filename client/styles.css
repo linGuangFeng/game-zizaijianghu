@@ -101,3 +101,25 @@ dd { margin: 0; overflow-wrap: anywhere; }
 #breakthrough-panel > button { width: 100%; margin-top: 12px; }
 #breakthrough-reward, #breakthrough-result { border: 1px solid #b8a77c; background: #e3e9df; padding: 16px; margin-top: 18px; }
 #breakthrough-reward h3, #breakthrough-result h3 { margin-top: 0; font-size: 18px; }
+
+/* Jianghu-only layout: 405 x 720 reference stage, locally drawn scenery. */
+.game-shell.is-jianghu { position: relative; align-self: flex-start; width: min(100%, 405px); aspect-ratio: 405 / 720; min-height: 0; padding: 0; border: 0; overflow: hidden; background: #dce6e5; }
+.is-jianghu > header { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); }
+.is-jianghu > #status { position: absolute; z-index: 4; top: 10%; left: 4%; width: 92%; min-height: 0; margin: 0; padding: 5px 8px; background: #f2f4e9ed; border: 1px solid #9aa99e; font-size: 12px; }
+.is-jianghu > #status:empty { display: none; }
+.is-jianghu #jianghu-panel { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; display: block; }
+.is-jianghu .jianghu-space { position: absolute; inset: 0; min-height: 0; margin: 0; border: 0; display: block; background: #dce6e5; }
+.jianghu-landscape { display: block; width: 100%; height: 100%; }
+.is-jianghu .jianghu-identity { position: absolute; z-index: 2; top: 0; left: 0; width: 100%; min-height: 8.5%; padding: 4px 10px; gap: 8px; justify-content: flex-start; align-items: flex-start; border: 0; background: linear-gradient(100deg, #f1f4e9ee, #f1f4e960 75%, transparent); }
+.is-jianghu .jianghu-avatar { width: 44px; height: 44px; flex: 0 0 44px; display: grid; place-items: center; border: 2px solid #899786; outline: 1px solid #e3e7d5; border-radius: 50%; background: #dbe1d2; color: #506355; font: 23px serif; }
+.jianghu-player { min-width: 0; display: flex; flex-direction: column; gap: 3px; padding-top: 1px; }
+.jianghu-player strong { max-height: 42px; overflow: auto; font-size: 13px; line-height: 1.4; font-weight: 500; color: #344238; }
+.is-jianghu .jianghu-player span { font-size: 11px; color: #647259; }
+.is-jianghu #checkpoint-message { position: absolute; z-index: 2; top: 79.6%; left: 30%; width: 40%; min-height: 0; margin: 0; padding: 5px 8px; text-align: center; color: #fff9dc; font-size: 12px; line-height: 1.4; background: linear-gradient(90deg, #56523a20, #56523adb 18%, #56523adb 82%, #56523a20); text-shadow: 0 1px #45452f; }
+.is-jianghu #checkpoint-message:empty { display: none; }
+.is-jianghu #retry-checkpoint { position: absolute; z-index: 3; bottom: 9%; left: 15%; width: 70%; margin: 0; padding: 8px 12px; }
+.is-jianghu .jianghu-navigation { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; height: 7.7%; min-height: 48px; margin: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; padding: 0; background: linear-gradient(0deg, #b4bfa9df, #e0e5d7d9 70%, #e0e5d700); border-bottom: 1px solid #75836d; }
+.is-jianghu .jianghu-navigation button { align-self: end; justify-self: center; width: calc(100% - 8px); min-width: 44px; min-height: 44px; height: 90%; padding: 4px 0; margin: 0; border: 1px solid #6e7b68; border-radius: 45% 45% 8px 8px; background: #e5e8d8; color: #344533; font: 16px serif; box-shadow: inset 0 0 0 3px #c1c9b5; }
+.is-jianghu #open-character { grid-column: 1; }
+.is-jianghu #open-equipment { grid-column: 2; }
+.is-jianghu button:focus-visible { outline-offset: -4px; }

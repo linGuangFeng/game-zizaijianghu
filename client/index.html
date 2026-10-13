@@ -26,8 +26,22 @@
       <div class="actions"><button id="back-button" class="secondary" type="button">返回</button><button id="save-button" class="primary" type="submit">保存角色</button></div>
     </form>
     <section id="jianghu-panel" hidden aria-label="江湖">
-      <div class="jianghu-identity"><strong id="jianghu-name"></strong><span id="jianghu-appearance"></span></div>
-      <div class="jianghu-space" aria-hidden="true"><span>江湖</span></div>
+      <div class="jianghu-identity"><span class="jianghu-avatar" role="img" aria-label="头像占位">侠</span><div class="jianghu-player"><strong id="jianghu-name"></strong><span id="jianghu-appearance"></span></div></div>
+      <div class="jianghu-space" aria-hidden="true">
+        <!-- Local simplified scenery, not an original map asset or a playable map. -->
+        <svg class="jianghu-landscape" viewBox="0 0 405 720" preserveAspectRatio="none" focusable="false">
+          <defs>
+            <linearGradient id="snow-tone" x2="0.8" y2="1"><stop stop-color="#edf2ef"/><stop offset="1" stop-color="#d6e2e5"/></linearGradient>
+            <linearGradient id="road-tone" x2="1" y2="0.8"><stop stop-color="#c4caa5"/><stop offset="0.5" stop-color="#ddd7b1"/><stop offset="1" stop-color="#c0c8a0"/></linearGradient>
+          </defs>
+          <path fill="url(#snow-tone)" d="M0 0h405v720H0z"/>
+          <path fill="#b5c4b1" opacity=".5" d="M0 50Q105 15 194 35L110 160Q30 190 0 138ZM405 297Q337 280 314 364L405 427ZM0 556Q53 529 113 574L83 720H0Z"/>
+          <path fill="url(#road-tone)" d="M110 0H287Q303 79 225 151T215 280Q306 365 254 454T168 573Q135 641 235 720H63Q21 646 60 564T137 424Q159 355 106 289T113 158Q172 95 110 0Z"/>
+          <path fill="#edf2ef" opacity=".8" d="M97 138l35 9-21 13-35-1ZM254 299l37 4-9 18-30-9ZM52 539l31 5-14 12-28-4ZM173 606l40 5-12 19-23-12Z"/>
+          <path d="M0 379l42 12 13 24-55 15ZM351 523l30-16 24 8v30l-50-6Z" fill="#9caeaa" opacity=".5"/>
+          <path d="M5 387l32 9 10 12-39 5M359 523l20-8 25 8" fill="none" stroke="#edf2ef" stroke-width="6"/>
+        </svg>
+      </div>
       <p id="checkpoint-message" class="status" role="status"></p>
       <button id="retry-checkpoint" class="secondary" type="button" hidden>重新读取武学</button>
       <nav class="jianghu-navigation" aria-label="江湖导航"><button id="open-character" class="secondary" type="button">侠客</button><button id="open-equipment" class="primary" type="button" hidden>武学</button></nav>

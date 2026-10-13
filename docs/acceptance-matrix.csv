@@ -26,4 +26,5 @@ LOCAL-NAV,local-function,江湖导航容器与已实现页面往返,本地阶段
 LOCAL-REALM,checkpoint,初入江湖三类训练事务,observed-before-training显式检查点,独立HTTP8项通过,主会话三类训练断服重读耗尽刷新双页冲突及人工上限通过,PASS,仅120阅历起点与train10；首次突破另项局部PASS；自然迁移资源获取美术未实现,docs/realm-qa.md
 LOCAL-GEAR,checkpoint,血战刀金紫更换与一键穿戴,observed-event5-blade显式样本,独立HTTP8项通过,主会话更换失败恢复双页冲突手动金与刷新通过,PASS,固定其他装备背景贡献；无普通角色自然解锁与完整美术,docs/gear-qa.md
 LOCAL-BREAKTHROUGH,checkpoint,首次突破三条件领取与进阶,observed-before-first-breakthrough显式检查点,独立接口10/10通过；开发回归57/57通过,主会话内部浏览器真实点击通过,PASS,仅三项宝典令流水与首次九品前期突破；非完整境界自然主线或视觉1比1,docs/breakthrough-qa.md；docs/event5-equipment-evidence.md
-ONBOARDING-L21,investigation,新服自然开局连续证据,新服凌云21服L21,未取得自然创角到授予技能完整契约,HTTPS不安全WebSocket触发SecurityError；未创建新角色,BLOCKED,旧服L20已恢复且事件6任务0/1未进；保留自然开局初值和授予规则未知,docs/onboarding-evidence.md；docs/event5-equipment-evidence.md
+ONBOARDING-L21,investigation,新服自然开局连续证据,新服凌云21服L21,未取得自然创角到授予技能完整契约,HTTPS不安全WebSocket触发SecurityError；未创建新角色,BLOCKED,旧服L20已完成事件6及第二探宝和首次升级；当前事件7任务0/1未进；保留自然开局初值和授予规则未知,docs/onboarding-evidence.md；docs/event5-equipment-evidence.md
+LOCAL-MAIN-LAYOUT,local-layout,江湖全幅舞台与入口位置,原版405比720布局,实际HTTP静态文件与角色突破读取通过；API未改,1280比720内部浏览器身份任务及页面往返通过,PASS,仅布局；本地简化背景非1比1美术；窄屏及战斗自然主线未完成,docs/main-scene-qa.md

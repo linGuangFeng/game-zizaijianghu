@@ -14,6 +14,7 @@ function status(message, error = false) {
 }
 
 function showPanel(id) {
+  document.querySelector('.game-shell').classList.toggle('is-jianghu', id === 'jianghu-panel');
   byId('portrait-area').hidden = id === 'martial-list' || id === 'martial-detail' || id === 'equipment-panel' || id === 'jianghu-panel' || id === 'realm-panel' || id === 'gear-panel' || id === 'breakthrough-panel';
   for (const panel of panels) byId(panel).hidden = panel !== id;
 }
