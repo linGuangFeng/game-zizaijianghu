@@ -132,14 +132,14 @@ test('second stage reaches93 atomically with no extra promotion attributes and p
   await rm(options.saveFile,{recursive:true});await rename(options.saveFile+'.bak',options.saveFile);
   const results=await Promise.all([train(base,'run',revision),train(base,'run',revision)]);
   assert.deepEqual(results.map(r=>r.status).sort(),[200,409]);
-  const final=await state(base);assert.equal(final.ninthTraining.stage,3);assert.equal(final.ninthTraining.supported,false);
+  const final=await state(base);assert.equal(final.ninthTraining.stage,3);assert.equal(final.ninthTraining.supported,true);
   assert.deepEqual(final.ninthTraining.progress,{current:0,target:66});
   assert.deepEqual(final.realm.attributes,{attack:176,defense:38,health:4870});
   assert.equal(final.resource.amount,16);assert.deepEqual(final.receipts,source.receipts);
   const asset=(await (await fetch(base+'/api/assets')).json()).state;
   assert.equal(asset.accounts.at(-1).available,16);assert.equal(asset.entries.length,55);
-  const refused=await train(base,'run',revision+1);assert.equal(refused.status,409);
-  assert.deepEqual(await refused.json(),{error:'realm_training_not_observed'});
+  const refused=await train(base,'trial',revision+1);assert.equal(refused.status,409);
+  assert.deepEqual(await refused.json(),{error:'realm_training_at_limit'});
   assert.deepEqual(await state(base),final);assert.equal(await readFile(options.realmSaveFile,'utf8'),side);
   const appUrl=new URL('../../server/app.js',import.meta.url).href;
   const code='import {createApp} from '+JSON.stringify(appUrl)+';const server=await createApp(JSON.parse(process.argv[1]));await new Promise(r=>server.listen(0,"127.0.0.1",r));const response=await fetch("http://127.0.0.1:"+server.address().port+"/api/breakthrough-state");console.log(JSON.stringify(await response.json()));server.close();';
@@ -154,4 +154,33 @@ test('legacy stage2 at39 reads without migration and insufficient balance cannot
   const base=await start(t,options);const initial=await state(base);assert.equal(initial.ninthTraining.supported,true);
   const refused=await train(base,'stance',4);assert.deepEqual(await refused.json(),{error:'realm_experience_insufficient'});
   assert.equal(await readFile(options.realmSaveFile,'utf8'),bytes);
+});
+
+test('third stage trains observed counts to53 each and stays66/66 with atomic final debit',async(t)=>{
+ const options=await fixture(t,1072);const saved=JSON.parse(await readFile(options.realmSaveFile,'utf8'));
+ saved.ninthTraining={stage:3,counts:{trial:28,stance:31,run:34}};saved.attributes={attack:106,defense:56,health:6740};
+ await writeFile(options.realmSaveFile,JSON.stringify(saved));await migrateAssets(options.saveFile,options.realmSaveFile);
+ const side=await readFile(options.realmSaveFile,'utf8');const base=await start(t,options);let revision=4;
+ for(const [id,count]of [['trial',25],['stance',22],['run',18]])for(let i=0;i<count;i++)assert.equal((await train(base,id,revision++)).status,200);
+ const before=await state(base);assert.deepEqual(before.ninthTraining.progress,{current:65,target:66});assert.deepEqual(before.realm.attributes,{attack:156,defense:78,health:8720});
+ const cap=await train(base,'trial',revision);assert.equal(cap.status,409);assert.deepEqual(await cap.json(),{error:'realm_training_at_limit'});
+ const bytes=await readFile(options.saveFile,'utf8');await rename(options.saveFile,options.saveFile+'.bak');await mkdir(options.saveFile);
+ assert.equal((await train(base,'run',revision)).status,500);assert.deepEqual(await state(base),before);assert.equal(await readFile(options.saveFile+'.bak','utf8'),bytes);
+ await rm(options.saveFile,{recursive:true});await rename(options.saveFile+'.bak',options.saveFile);
+ const responses=await Promise.all([train(base,'run',revision),train(base,'run',revision)]);assert.deepEqual(responses.map(r=>r.status).sort(),[200,409]);
+ const final=await state(base);assert.equal(final.ninthTraining.stage,3);assert.equal(final.ninthTraining.supported,false);assert.deepEqual(final.ninthTraining.progress,{current:66,target:66});
+ assert.deepEqual(final.ninthTraining.training.map(x=>[x.count,x.limit]),[[53,53],[53,53],[53,53]]);assert.deepEqual(final.realm.attributes,{attack:156,defense:78,health:8830});assert.equal(final.resource.amount,16);
+ const assets=(await(await fetch(base+'/api/assets')).json()).state;assert.equal(assets.accounts.find(a=>a.id==='jianghu-experience').available,16);
+ const fullBytes=await readFile(options.saveFile,'utf8');const full=await train(base,'run',revision+1);assert.equal(full.status,409);assert.deepEqual(await full.json(),{error:'realm_training_at_limit'});assert.equal(await readFile(options.saveFile,'utf8'),fullBytes);
+ assert.equal(await readFile(options.realmSaveFile,'utf8'),side);assert.deepEqual(final.receipts,saved.receipts);
+ const code='import {createApp} from '+JSON.stringify(new URL('../../server/app.js',import.meta.url).href)+';const s=await createApp(JSON.parse(process.argv[1]));await new Promise(r=>s.listen(0,"127.0.0.1",r));console.log(JSON.stringify(await(await fetch("http://127.0.0.1:"+s.address().port+"/api/breakthrough-state")).json()));s.close();';
+ const restarted=await promisify(execFile)(process.execPath,['--input-type=module','-e',code,JSON.stringify(options)]);assert.deepEqual(JSON.parse(restarted.stdout).state,final);
+});
+
+test('third stage insufficient balance and sidecar cap do not mutate; history above53 still loads',async(t)=>{
+ const options=await fixture(t,15);const saved=JSON.parse(await readFile(options.realmSaveFile,'utf8'));saved.ninthTraining={stage:3,counts:{trial:54,stance:20,run:19}};
+ const bytes=JSON.stringify(saved);await writeFile(options.realmSaveFile,bytes);const base=await start(t,options);
+ assert.equal((await state(base)).ninthTraining.training[0].count,54);
+ const capped=await train(base,'trial',4);assert.deepEqual(await capped.json(),{error:'realm_training_at_limit'});
+ const poor=await train(base,'run',4);assert.deepEqual(await poor.json(),{error:'realm_experience_insufficient'});assert.equal(await readFile(options.realmSaveFile,'utf8'),bytes);
 });

@@ -1011,14 +1011,15 @@ function displayNinthTraining(state) {
     attribute.textContent = `${realmAttributeNames[training.attribute]} +${training.count * training.gain}`;
     const button = document.createElement('button');
     button.type = 'button';
-    button.dataset.unsupported = String(!ninth.supported);
-    button.textContent = ninth.supported ? `${state.resource.name} ${training.cost}` : '暂未开放';
+    const atLimit = training.limit !== undefined && training.count >= training.limit;
+    button.dataset.unsupported = String(!ninth.supported || atLimit);
+    button.textContent = ninth.supported && !atLimit ? `${state.resource.name} ${training.cost}` : '已达瓶颈';
     button.setAttribute('aria-label', `${training.name}：${button.textContent}`);
     button.addEventListener('click', () => trainNinth(training.id));
     card.append(name, attribute, button);
     byId('ninth-training-cards').append(card);
   }
-  byId('ninth-limit').textContent = !ninth.supported ? '第三重修炼暂未开放' : state.resource.amount < ninth.training[0].cost ? '江湖阅历不足' : '';
+  byId('ninth-limit').textContent = !ninth.supported ? '已达瓶颈' : state.resource.amount < ninth.training[0].cost ? '江湖阅历不足' : '';
 }
 
 async function trainNinth(training) {
@@ -1043,16 +1044,17 @@ async function trainNinth(training) {
       }
       const messages = {
         realm_experience_insufficient: '江湖阅历不足，请重新读取修炼。',
-        realm_training_not_observed: '第三重修炼暂未开放，请重新读取修炼。',
+        realm_training_at_limit: '已达瓶颈，请重新读取修炼。',
+        realm_training_not_observed: '后续修炼暂未开放，请重新读取修炼。',
         realm_breakthrough_required: '请先完成突破，再重新读取修炼。',
       };
       throw new Error(messages[result.error] || '修炼结果暂未确认，请重新读取修炼。');
     }
     displayBreakthrough(result.state);
-    byId('ninth-message').textContent = result.state.ninthTraining.supported ? '修炼成功' : '已进入' + result.state.ninthTraining.stageName;
+    byId('ninth-message').textContent = result.state.ninthTraining.supported ? '修炼成功' : '修炼成功，已达瓶颈';
   } catch (error) {
     breakthroughReady = false;
-    const known = ['江湖阅历不足，请重新读取修炼。', '第三重修炼暂未开放，请重新读取修炼。', '请先完成突破，再重新读取修炼。'];
+    const known = ['已达瓶颈，请重新读取修炼。', '江湖阅历不足，请重新读取修炼。', '后续修炼暂未开放，请重新读取修炼。', '请先完成突破，再重新读取修炼。'];
     byId('ninth-message').textContent = known.includes(error.message) ? error.message : '修炼结果暂未确认，请重新读取修炼。';
     byId('retry-ninth').hidden = false;
   } finally {

@@ -25,7 +25,7 @@ function validNinthTraining(data) {
     || Object.keys(progress.counts).length !== 3
     || !ninthTrainingTypes.every(({ id }) => Number.isInteger(progress.counts[id]) && progress.counts[id] >= 0)) return false;
   const total = Object.values(progress.counts).reduce((sum, count) => sum + count, 0);
-  return progress.stage === 1 ? total < 39 : progress.stage === 2 ? total >= 39 && total < 93 : total === 93;
+  return progress.stage === 1 ? total < 39 : progress.stage === 2 ? total >= 39 && total < 93 : total >= 93 && total <= 159;
 }
 export const breakthroughConditions = [
   { id: 'event5', label: '通关事件5', current: 1, target: 1 },
@@ -132,9 +132,9 @@ export async function createRealmStore({ file, checkpoint, character, storage })
     const { counts, stage } = ninthProgress(saved);
     const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
     return {
-      stage, stageName: ['第一重', '第二重', '第三重'][stage - 1], total, supported: stage < 3,
-      progress: { current: stage === 1 ? total : stage === 2 ? total - 39 : 0, target: [39, 54, 66][stage - 1] },
-      training: ninthTrainingTypes.map((training) => ({ ...training, count: counts[training.id] })),
+      stage, stageName: ['第一重', '第二重', '第三重'][stage - 1], total, supported: stage < 3 || total < 159,
+      progress: { current: stage === 1 ? total : stage === 2 ? total - 39 : total - 93, target: [39, 54, 66][stage - 1] },
+      training: ninthTrainingTypes.map((training) => ({ ...training, ...(stage === 3 ? { limit: 53 } : {}), count: counts[training.id] })),
     };
   }
   let queue = Promise.resolve();
@@ -169,7 +169,8 @@ export async function createRealmStore({ file, checkpoint, character, storage })
       const state = breakthroughStateFor(character);
       if (saved.revision !== expectedRevision) throw new RealmStateError(409, 'realm_revision_conflict');
       if (!saved.advanced) throw new RealmStateError(409, 'realm_breakthrough_required');
-      if (!state.ninthTraining.supported) throw new RealmStateError(409, 'realm_training_not_observed');
+      if (!state.ninthTraining.supported) throw new RealmStateError(409, 'realm_training_at_limit');
+      if (state.ninthTraining.stage === 3 && ninthProgress(saved).counts[trainingId] >= 53) throw new RealmStateError(409, 'realm_training_at_limit');
       const training = ninthTrainingTypes.find(({ id }) => id === trainingId);
       if (saved.experience < training.cost) throw new RealmStateError(409, 'realm_experience_insufficient');
       const current = ninthProgress(saved);
