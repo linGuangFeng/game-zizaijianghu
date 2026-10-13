@@ -1,11 +1,11 @@
 {
   "projectComplete": false,
-  "activeWork": "江湖布局改进及事件6到上勾拳首次升级证据已提交077a722；限定HTTP与页面检查通过",
+  "activeWork": "上勾拳首次升级已接既有存档并双层验收通过，提交033df67",
   "lastFailure": "新服L21 Unity SecurityError：HTTPS页面拒绝不安全WebSocket连接，未创建角色",
   "userPaused": false,
-  "nextAction": "原版L20停事件7任务0/1。下一步将已实测上勾拳首次升级接入既有武学存档与页面，先核对材料语义及现存schema，不默认赠材料，不另增孤立检查点；并继续可用角色/地图资产调查。",
+  "nextAction": "继续原版事件7及自然材料获取规则取证，优先补可连通既有武学成长的流程；不得把未知抽奖概率写成固定奖励。原版L20保留在事件7任务0/1。",
   "status": "HANDOFF_READY",
-  "updatedAt": "2026-10-13T05:54:37.9877493Z",
+  "updatedAt": "2026-10-13T06:07:11.6285600Z",
   "agents": [
     {
       "state": "COMPLETE",
