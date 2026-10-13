@@ -32,3 +32,14 @@ dd { margin: 0; overflow-wrap: anywhere; }
 #retry-button { width: 100%; }
 [hidden] { display: none !important; }
 @media (max-height: 650px) { .game-shell { padding-top: 20px; } .portrait-area { min-height: 190px; padding-block: 20px; } }
+
+#open-martial { margin-top: 24px; }
+#martial-list, #martial-detail { padding-top: 28px; }
+.reference-note { font-size: 13px; color: #667b73; line-height: 1.6; }
+.martial-entries { display: grid; gap: 12px; margin: 24px 0; }
+.martial-card { display: flex; align-items: center; justify-content: space-between; gap: 15px; background: #e3e9df; color: #315d50; text-align: left; }
+.martial-card span { font-size: 13px; }
+#martial-list > button, #martial-detail > button { width: 100%; margin-top: 12px; }
+#martial-detail h3 { margin: 24px 0 10px; font-size: 16px; font-weight: 500; }
+#martial-detail ul { padding-left: 20px; font-size: 14px; line-height: 1.8; }
+#martial-detail dl { font-size: 14px; }

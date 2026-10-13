@@ -1,0 +1,28 @@
+{
+  "projectComplete": false,
+  "activeWork": "主会话验收武学图鉴页面；原版浏览器取证由主会话接手",
+  "lastFailure": "代理结束后未接续；事件仅进入主会话邮箱未及时转交监听",
+  "userPaused": false,
+  "nextAction": "页面点击验收、提交；恢复原版连接并采集装配规则",
+  "status": "RUNNING_INTEGRATION",
+  "updatedAt": "2026-10-13T03:38:12.3062654Z",
+  "agents": [
+    {
+      "state": "DELIVERED_PENDING_BROWSER_QA",
+      "role": "client"
+    },
+    {
+      "state": "DELIVERED_COMMITTED",
+      "role": "server"
+    },
+    {
+      "state": "API_PASSED_UI_PENDING",
+      "role": "qa"
+    }
+  ],
+  "blockers": [
+    "Grok外发审批拒绝，不绕过",
+    "子代理浏览器ACL错误；主会话浏览器可用"
+  ],
+  "coordinatorThreadId": "01a13054-dfbc-7823-947a-a52e7a88fa33"
+}

@@ -10,7 +10,7 @@
 <body>
   <main class="game-shell" aria-labelledby="title">
     <header><p class="eyebrow">自在江湖</p><h1 id="title">创建角色</h1></header>
-    <section class="portrait-area" aria-label="角色选择">
+    <section id="portrait-area" class="portrait-area" aria-label="角色选择">
       <div class="character-mark" id="character-mark" aria-hidden="true">侠</div>
       <p id="appearance-caption">选择角色</p>
     </section>
@@ -27,9 +27,27 @@
     </form>
     <section id="saved-step" hidden aria-labelledby="saved-title">
       <h2 id="saved-title">我的角色</h2>
-      <dl><div><dt>角色名称</dt><dd id="saved-name"></dd></div><div><dt>性别</dt><dd id="saved-appearance"></dd></div></dl>
+      <dl><div><dt>角色名称</dt><dd id="saved-name"></dd></div><div><dt>性别</dt><dd id="saved-appearance"></dd></div></dl><button id="open-martial" class="primary" type="button">武学图鉴</button>
+    </section>
+    <section id="martial-list" hidden aria-labelledby="martial-list-title">
+      <h2 id="martial-list-title">武学图鉴</h2>
+      <p class="reference-note">参考资料 · 只读</p>
+      <div id="martial-entries" class="martial-entries"></div>
+      <button id="retry-martial" class="secondary" type="button" hidden>重新读取图鉴</button>
+      <button id="back-character" class="secondary" type="button">返回角色</button>
+    </section>
+    <section id="martial-detail" hidden aria-labelledby="martial-detail-title">
+      <h2 id="martial-detail-title"></h2>
+      <p class="reference-note">参考资料 · 只读</p>
+      <dl id="martial-facts"></dl>
+      <h3>技能说明</h3><ul id="martial-description"></ul>
+      <p id="description-incomplete" class="reference-note" hidden>说明未完整收录</p>
+      <h3>属性</h3><dl id="martial-attributes"></dl>
+      <h3>天赋记录</h3><ul id="martial-talents"></ul>
+      <button id="back-martial-list" class="secondary" type="button">返回图鉴</button>
     </section>
     <button id="retry-button" class="secondary" type="button" hidden>重新读取</button>
   </main>
 </body>
 </html>
+
