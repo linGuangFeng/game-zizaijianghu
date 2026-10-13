@@ -30,4 +30,3 @@ ONBOARDING-L21,investigation,新服自然开局连续证据,新服凌云21服L21
 LOCAL-MAIN-LAYOUT,local-layout,江湖全幅舞台与入口位置,原版405比720布局,实际HTTP静态文件与角色突破读取通过；API未改,1280比720内部浏览器身份任务及页面往返通过,PASS,仅布局；本地简化背景非1比1美术；窄屏及战斗自然主线未完成,docs/main-scene-qa.md
 LOCAL-MARTIAL-UPGRADE,local-function,既有武学存档上勾拳1至2级升级,原版首次升级证据与既有武学成长契约,独立接口10/10通过；开发回归63/63通过,主内部浏览器未知材料禁用及停服锁定重启通过；双页装卸版本冲突只读恢复通过；明确升级材料2至1且Lv2及装配保成长刷新通过,PASS,不新建checkpoint或生产发材料；仅首次升级；材料获取自然闭环及完整养成视觉仍未完成；原版事件7后续取证不扩大本功能PASS,docs/martial-upgrade-qa.md；docs/event6-evidence.md
 DISC-TREASURE,investigation,藏经阁第1层规则与重复武学材料语义,原版规则及连续抽取样本,未实现抽奖服务或组内权重,原版已逐图记录四组概率与3次单抽及材料对照,BLOCKED,组内单项权重和首次学习重复到账仍缺中间对照；不默认均分或自动转换；继续自然训练解锁,docs/event7-treasure-evidence.md
-

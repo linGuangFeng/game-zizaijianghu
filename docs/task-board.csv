@@ -30,4 +30,3 @@
 "EVENT6-DISC","事件6至武学首次升级连续证据","主会话及QA","VERIFIED","EVENT2-GEAR-DISC","docs/event6-evidence.md","原版地图挑战与战斗后任务已完成，胜利页漏帧；第二探宝与上勾拳1至2级已取证；后续事件7已完成，见event7-treasure-evidence；仅证据非实现"
 "MARTIAL-FIRST-UPGRADE","既有武学存档上勾拳首次升级","服务端/客户端/QA及主会话","VERIFIED","EVENT6-DISC和MARTIAL-MANUAL","docs/martial-upgrade-qa.md","独立接口10/10和开发回归63/63；内部页面未知材料禁用、停服锁定、重启、装卸版本冲突只读恢复、材料2至1且Lv2、装配保成长与刷新通过；不新建检查点或赠送材料；原版后续事件7取证独立记录，不扩大本功能验收"
 "EVENT7-TREASURE-DISC","事件7藏经阁及充值入口调查","主会话及QA","RUNNING","EVENT6-DISC","docs/event7-treasure-evidence.md","事件7胜利及主线领取、第1层四组概率和三次抽取已取证；单项权重与首次学习重复材料语义仍缺；当前训练69次33/69，先自然解锁再查充值；仅调查非新双层PASS"
-
