@@ -1,11 +1,11 @@
 {
   "projectComplete": false,
-  "activeWork": "主会话验收武学图鉴页面；原版浏览器取证由主会话接手",
+  "activeWork": "武学图鉴页面已完成内部浏览器验收；等待主协调续接原版装配取证",
   "lastFailure": "代理结束后未接续；事件仅进入主会话邮箱未及时转交监听",
   "userPaused": false,
-  "nextAction": "页面点击验收、提交；恢复原版连接并采集装配规则",
-  "status": "RUNNING_INTEGRATION",
-  "updatedAt": "2026-10-13T03:38:12.3062654Z",
+  "nextAction": "主协调复用自身内部浏览器恢复原版连接，采集一键装配及槽位变化；有证据后派发实现",
+  "status": "HANDOFF_READY",
+  "updatedAt": "2026-10-13T03:40:34.7087389Z",
   "agents": [
     {
       "state": "DELIVERED_PENDING_BROWSER_QA",
