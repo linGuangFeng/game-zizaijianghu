@@ -175,6 +175,11 @@ export async function createCharacterStore(file) {
             assets = { ...assets, revision: assets.revision + 1, entries: [...assets.entries,
               { id: 'realm-training:' + realm.revision, assetId: 'jianghu-experience', delta, source: 'realm-training' }] };
           }
+          // Only receipts created in this transaction earn a new ledger entry.
+          // Imported or historical receipts are intentionally not backfilled.
+          const rewards = (realm.receipts ?? []).filter((receipt) => !(previous.receipts ?? []).some((old) => old.id === receipt.id))
+            .map((receipt) => ({ id: 'realm-reward:' + receipt.id, assetId: receipt.reward.id, delta: receipt.reward.amount, source: 'first-breakthrough-claim' }));
+          if (rewards.length) assets = { ...assets, revision: assets.revision + 1, entries: [...assets.entries, ...rewards] };
           if (!validAssets(assets) || assetAccounts(assets.entries).find((a) => a.id === 'jianghu-experience')?.available !== realm.experience) throw new Error('Realm asset invariant failed.');
           await persist({ ...saved, assets, domains: { ...saved.domains, realm: structuredClone(realm) } });
         },

@@ -825,7 +825,7 @@ node server/migrate-assets.js --character "D:/path/character.json" --realm "D:/p
 }
 ```
 
-原订单存在时保留commerce全部内容；选择realm时 `domains.realm` 原样保存所选境界状态。迁移只将已领取首日的宝典令、元宝记录分别入账一次；荡剑式继续作为commerce权益记录。选中realm的精确阅历余额作为有来源的期初记录，不从截图缩写反推数值。突破宝典令receipts与装备仍未并入资产账本。武学材料/成长只在显式选择武学迁移后并入；未迁入的角色仍使用原武学侧档。
+原订单存在时保留commerce全部内容；选择realm时 `domains.realm` 原样保存所选境界状态。迁移只将已领取首日的宝典令、元宝记录分别入账一次；荡剑式继续作为commerce权益记录。选中realm的精确阅历余额作为有来源的期初记录，不从截图缩写反推数值。突破的历史receipts不追溯入账；迁入realm后的新增首次条件奖励按下节规则到账，装备仍未并入。武学材料/成长只在显式选择武学迁移后并入；未迁入的角色仍使用原武学侧档。
 
 ### 读取资产
 
@@ -861,11 +861,11 @@ node server/migrate-assets.js --character "D:/path/character.json" --realm "D:/p
 
 ### 事务、版本与兼容
 
-迁入realm后，旧 `/api/realm-state` 与 `/api/breakthrough-state` 读取/动作路径及请求响应保持不变；训练的阅历扣减、属性计数和资产负流水共用角色store队列，通过主文件一次临时文件替换提交。失败时账本与境界内存均不更新，仍可用原境界revision重试。realm领取与突破也写同一主文件，但本轮不将其宝典令receipts兑换为资产。
+迁入realm后，旧 `/api/realm-state` 与 `/api/breakthrough-state` 读取/动作路径及请求响应保持不变；训练的阅历扣减、属性计数和资产负流水共用角色store队列，通过主文件一次临时文件替换提交。失败时账本与境界内存均不更新，仍可用原境界revision重试。realm领取与突破也写同一主文件；新增首次条件receipt按下节规则同事务记宝典令+5，历史receipt不补发，突破动作本身不追加资产。
 
 schema2首次首日领取同一次提交commerce三条grants和两条资产正流水；重领按原commerce版本与幂等约定处理，不重复入账。旧schema1领取仍仅保存grants，随后显式迁移才导入已领取记录。角色PUT保留commerce/assets/domains；改名或改外观不自动重绑或清空资源。
 
-assets.revision只描述资产账本变动，不是全域总revision，也不替代commerce或realm的expectedRevision。购买订单、角色PUT、无资产变化的突破领取/突破动作不会增加assets.revision；一次首日两种资产入账只增加1，训练扣费增加1，幂等无写不增加。迁移期初资产版本从0开始，导入已有首日权益会增为1。
+assets.revision只描述资产账本变动，不是全域总revision，也不替代commerce或realm的expectedRevision。购买订单、角色PUT、无资产变化的重复领取/突破动作不会增加assets.revision；新增首次条件领奖增加一次；一次首日两种资产入账只增加1，训练扣费增加1，幂等无写不增加。迁移期初资产版本从0开始，导入已有首日权益会增为1。
 
 | 状态 / error | 含义 |
 | --- | --- |
@@ -911,7 +911,7 @@ node server/migrate-assets.js --character "D:/path/character.json" --martial "D:
 
 已知材料迁入增加一次assets.revision；未知材料迁入没有资产流水，因此不增加资产版本。后续升级扣材增加一次assets.revision。武学API响应仍是原state形状；客户端在成功或恢复读取后另GET资产状态。角色更名或外观变化不清空或重绑已迁域，原绑定冲突继续生效。材料与主域数量不一致时拒绝启动，不进行读时修复。
 
-荡剑式仍仅为本地测试商品权益记录，不因本次武学迁移变为可用武学；装备和突破宝典令receipts也没有被顺带并入。不同检查点并存仍只是所选本地状态，不表示普通角色自然完成了对应任务或资源获得流程。
+荡剑式仍仅为本地测试商品权益记录，不因本次武学迁移变为可用武学；装备和历史突破宝典令receipts没有被顺带并入；迁移后新增首次领取按下节规则处理。不同检查点并存仍只是所选本地状态，不表示普通角色自然完成了对应任务或资源获得流程。
 
 本轮开发回归89/89通过，其中新增5项验证增量保留已消费realm、来源摘要幂等、unknown/0区分、升级失败及并发单扣、跨域并发不丢状态、侧档停用和真实进程恢复。独立QA与页面验证由各执行角色另行记录。
 
@@ -921,3 +921,20 @@ node server/migrate-assets.js --character "D:/path/character.json" --martial "D:
 原版第三重起点三卡28/31/34、属性106/56/6740；65/66时53/53/52、属性156/78/8720；最后一次调息后仍第三重66/66、三卡53/53/53、属性156/78/8830，三按钮均已达瓶颈。单次标价16来自按钮明示，缩写阅历不用于反推精确差额。截图为本轮 `docs/evidence/original-third-*.jpg`，不将此样本泛化为后续突破或其他境界算法。
 
 第三重开发回归91/91通过。新增测试使用隔离人工余额，不构成生产授予；覆盖全程66次、单项53瓶颈、余额不足、最后一步落盘失败原子性、同revision竞争、schema2资产同步与侧档保留、满66拒绝及真实进程恢复。独立接口与页面验收由对应角色另行记录。
+
+
+### 迁入realm后的新增首次突破奖励到账
+
+仅针对已有首次突破样本的三个条件。已迁入schema2的realm在新领取条件时，将新receipt与宝典令+5资产流水同一次主文件事务提交；没有第二次突破条件或自动满足自然主线，也不新增检查点。
+
+```json
+{"id":"realm-reward:first-breakthrough-event5","assetId":"baodian-token-reference","delta":5,"source":"first-breakthrough-claim"}
+```
+
+source显示为“首次突破条件奖励”；id固定为 `realm-reward:` 加原receipt.id，另两项对应first-breakthrough-martial2与first-breakthrough-training30。宝典令total仍null，仅已记录available增加5。单次领取realm.revision与assets.revision各加1；原claim请求、完整state响应和绑定/版本错误不变，客户端另GET资产刷新。
+
+只对当前事务相较原realm快照新增的receipt入账。迁移时已有receipt、旧schema2内已存receipt均不追溯补发，GET不写；当前版本重复领取无写无到账，旧版本先返回realm_revision_conflict。升级代码后也不会把历史领奖记录当成待领取奖励。未迁入realm的侧档模式继续只写receipt，不跨文件更新主资产。
+
+写入失败时receipt、领取状态、两个版本与资产均保持原值；修复后可用原版本重试。同版本并发只有一次提交。主store共用队列保留其他域，因此与测试商品首日领取并发时，两种有来源宝典令奖励不会互相覆盖；荡剑式仍只有权益记录。
+
+开发回归94/94通过，新增验证历史不补发、重复/旧版本、故障原子、并发单次到账、与首日40同时领取得到已记录45，以及侧档兼容。独立HTTP与页面结果另行记录，不将本次修复视为普通角色自然链完成。

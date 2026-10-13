@@ -9,7 +9,8 @@ export function validAssets(value) {
   return value && Number.isSafeInteger(value.revision) && value.revision >= 0 && Array.isArray(value.entries)
     && new Set(value.entries.map((e) => e?.id)).size === value.entries.length
     && value.entries.every((e) => typeof e?.id === 'string' && e.id.length > 0 && Object.hasOwn(assetNames, e.assetId)
-      && Number.isSafeInteger(e.delta) && ['local-test-day1', 'realm-import', 'realm-training', 'martial-import', 'martial-upgrade'].includes(e.source)
+      && Number.isSafeInteger(e.delta) && ['local-test-day1', 'realm-import', 'realm-training', 'martial-import', 'martial-upgrade', 'first-breakthrough-claim'].includes(e.source)
+      && (e.source !== 'first-breakthrough-claim' || (e.assetId === 'baodian-token-reference' && e.delta === 5))
       && (e.source === 'realm-training' ? e.assetId === 'jianghu-experience' && e.delta < 0 : e.source === 'martial-upgrade' ? e.assetId === 'uppercut-material-reference' && e.delta === -1 : e.delta >= 0))
     && assetAccounts(value.entries).every((a) => Number.isSafeInteger(a.available) && a.available >= 0);
 }

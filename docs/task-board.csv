@@ -37,3 +37,4 @@
 "ASSETS-MARTIAL","武学材料消费并入主存档事务","服务端/客户端/QA及主会话","VERIFIED","ASSETS-REALM","docs/martial-assets-qa.md及docs/local-api.md","开发89项独立HTTP/CLI10项，3015升级停服恢复冲突与3016未知材料页面通过；已知材料原子扣费，未自动授予武学或自然材料"
 "CONTINUE-EXISTING","江湖已有域继续入口","客户端/架构/QA及主会话","PARTIAL_VERIFIED","ASSETS-MARTIAL","docs/continue-entry-qa.md","独立HTTP7项及主3015武学九品停服恢复、3014第三重、3004无域和3006旧训练页面通过；未突破及409页面待验；无自然剧情或资源授予"
 "REALM-THIRD-STAGE","九品前期第三重66次及瓶颈","服务端/客户端/QA及主会话","VERIFIED","REALM-SECOND-STAGE","docs/third-stage-qa.md和docs/third-stage-evidence.md","开发91项独立HTTP10项及3017三卡瓶颈停服恢复末次冲突刷新账本通过；满66保持第三重，无第二突破实现或自然任务链"
+"ASSETS-FIRST-BREAKTHROUGH","首次突破新奖励并入统一资产事务","服务端/客户端/QA及主会话","VERIFIED","ASSETS-REALM","docs/realm-reward-assets-qa.md","开发94项独立HTTP9项及3018领取5至15冲突停服重读刷新通过；只迁入后新receipt旧历史不追溯；非第二次突破自然条件闭环"

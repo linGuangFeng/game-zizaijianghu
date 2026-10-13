@@ -1208,6 +1208,7 @@ const assetSourceNames = {
   'local-test-day1': '测试充值首日奖励',
   'realm-import': '既有阅历记录',
   'realm-training': '境界修炼',
+  'first-breakthrough-claim': '首次突破条件奖励',
   'martial-import': '既有武学材料记录',
   'martial-upgrade': '上勾拳升级消耗',
 };
