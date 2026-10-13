@@ -7,6 +7,7 @@ const genderLabels = {
 let options = [];
 let appearanceId = null;
 let saving = false;
+let catalogRequest = 0;
 
 function status(message, error = false) {
   byId('status').textContent = message;
@@ -14,6 +15,7 @@ function status(message, error = false) {
 }
 
 function showPanel(id) {
+  if (id !== 'martial-list' && !byId('martial-list').hidden) ++catalogRequest;
   document.querySelector('.game-shell').classList.toggle('is-jianghu', id === 'jianghu-panel');
   byId('portrait-area').hidden = id === 'martial-list' || id === 'martial-detail' || id === 'equipment-panel' || id === 'jianghu-panel' || id === 'realm-panel' || id === 'gear-panel' || id === 'breakthrough-panel' || id === 'player-martial-detail' || id === 'ninth-training-panel' || id === 'commerce-panel';
   for (const panel of panels) byId(panel).hidden = panel !== id;
@@ -169,6 +171,7 @@ function showMartialEntry(entry) {
 }
 
 async function openMartialCatalog() {
+  const request = ++catalogRequest;
   showPanel('martial-list');
   byId('title').textContent = '武学图鉴';
   byId('retry-martial').hidden = true;
@@ -176,8 +179,10 @@ async function openMartialCatalog() {
   status('正在读取图鉴……');
   try {
     const response = await fetch('/api/reference/martial-catalog');
+    if (request !== catalogRequest) return;
     if (!response.ok) throw new Error('catalog_failed');
     const catalog = await response.json();
+    if (request !== catalogRequest) return;
     for (const entry of catalog.entries) {
       const button = document.createElement('button');
       button.type = 'button';
@@ -192,6 +197,7 @@ async function openMartialCatalog() {
     }
     if (!byId('martial-list').hidden) status('');
   } catch {
+    if (request !== catalogRequest) return;
     if (!byId('martial-list').hidden) {
       status('图鉴读取失败，请重试。', true);
       byId('retry-martial').hidden = false;
@@ -239,7 +245,15 @@ function displayCheckpoint(state) {
   for (const slot of state.slots) {
     const item = document.createElement('li');
     item.className = slot.locked ? 'slot locked' : slot.skillId ? 'slot equipped' : 'slot';
-    const label = document.createElement('span');
+    const unlockEvent = { 4: 12, 5: 19, 6: 32 }[slot.position];
+    const canShowLockHint = slot.locked && unlockEvent !== undefined;
+    const label = document.createElement(canShowLockHint ? 'button' : 'span');
+    if (canShowLockHint) {
+      label.type = 'button';
+      label.className = 'slot-lock-hint';
+      label.setAttribute('aria-label', `查看槽位${slot.position}解锁条件`);
+      label.addEventListener('click', () => status(`通关江湖事件第${unlockEvent}关解锁`));
+    }
     label.textContent = slot.locked ? '锁定' : slot.skillId ? equippedSkillNames[slot.skillId] : '+';
     const number = document.createElement('small');
     number.textContent = String(slot.position);
@@ -362,8 +376,10 @@ byId('retry-checkpoint').addEventListener('click', readCheckpoint);
 byId('retry-equipment').addEventListener('click', readCheckpoint);
 byId('back-equipment').addEventListener('click', showJianghu);
 byId('auto-equip').addEventListener('click', async () => {
-  if (equipping) return;
+  if (equipping || !martialGrowthReady) return;
   equipping = true;
+  martialGrowthReady = false;
+  byId('upgrade-martial').disabled = true;
   ++checkpointRequest;
   byId('auto-equip').disabled = true;
   byId('edit-equipment').disabled = true;
@@ -374,26 +390,32 @@ byId('auto-equip').addEventListener('click', async () => {
     const response = await fetch('/api/martial-state/auto-equip', { method: 'POST' });
     if (!response.ok) throw new Error('equip_failed');
     displayCheckpoint((await response.json()).state);
+    martialGrowthReady = true;
     status('装配成功');
   } catch {
-    status('装配失败，请重试。', true);
+    status('装配结果暂未确认，请重新读取武学。', true);
+    byId('retry-equipment').hidden = false;
   } finally {
     equipping = false;
-    byId('auto-equip').disabled = false;
-    byId('edit-equipment').disabled = false;
-    for (const button of document.querySelectorAll('#equipment-slots button, #equipment-owned button')) button.disabled = false;
+    displayPlayerMartial();
+    byId('auto-equip').disabled = !martialGrowthReady;
+    byId('edit-equipment').disabled = !martialGrowthReady;
+    for (const button of document.querySelectorAll('#equipment-slots button, #equipment-owned button')) button.disabled = !martialGrowthReady;
     byId('back-equipment').disabled = false;
   }
 });
 
 byId('edit-equipment').addEventListener('click', () => {
+  if (equipping || !martialGrowthReady) return;
   editingEquipment = !editingEquipment;
   displayCheckpoint(equipmentState);
 });
 
 async function unequipMartial(position) {
-  if (equipping) return;
+  if (equipping || !martialGrowthReady) return;
   equipping = true;
+  martialGrowthReady = false;
+  byId('upgrade-martial').disabled = true;
   ++checkpointRequest;
   byId('auto-equip').disabled = true;
   byId('edit-equipment').disabled = true;
@@ -410,21 +432,26 @@ async function unequipMartial(position) {
       } : { method: 'POST' });
     if (!response.ok) throw new Error('unequip_failed');
     displayCheckpoint((await response.json()).state);
+    martialGrowthReady = true;
     status('卸下成功');
   } catch {
-    status('卸下失败，请重试。', true);
+    status('卸下结果暂未确认，请重新读取武学。', true);
+    byId('retry-equipment').hidden = false;
   } finally {
     equipping = false;
-    byId('auto-equip').disabled = false;
-    byId('edit-equipment').disabled = false;
+    displayPlayerMartial();
+    byId('auto-equip').disabled = !martialGrowthReady;
+    byId('edit-equipment').disabled = !martialGrowthReady;
     byId('back-equipment').disabled = false;
-    for (const button of document.querySelectorAll('#equipment-slots button, #equipment-owned button')) button.disabled = false;
+    for (const button of document.querySelectorAll('#equipment-slots button, #equipment-owned button')) button.disabled = !martialGrowthReady;
   }
 }
 
 async function equipMartialSkill(skillId) {
-  if (equipping) return;
+  if (equipping || !martialGrowthReady) return;
   equipping = true;
+  martialGrowthReady = false;
+  byId('upgrade-martial').disabled = true;
   ++checkpointRequest;
   byId('auto-equip').disabled = true;
   byId('edit-equipment').disabled = true;
@@ -439,15 +466,18 @@ async function equipMartialSkill(skillId) {
     });
     if (!response.ok) throw new Error('equip_failed');
     displayCheckpoint((await response.json()).state);
+    martialGrowthReady = true;
     status('装配成功');
   } catch {
-    status('装配失败，请重试。', true);
+    status('装配结果暂未确认，请重新读取武学。', true);
+    byId('retry-equipment').hidden = false;
   } finally {
     equipping = false;
-    byId('auto-equip').disabled = false;
-    byId('edit-equipment').disabled = false;
+    displayPlayerMartial();
+    byId('auto-equip').disabled = !martialGrowthReady;
+    byId('edit-equipment').disabled = !martialGrowthReady;
     byId('back-equipment').disabled = false;
-    for (const button of document.querySelectorAll('#equipment-slots button, #equipment-owned button')) button.disabled = false;
+    for (const button of document.querySelectorAll('#equipment-slots button, #equipment-owned button')) button.disabled = !martialGrowthReady;
   }
 }
 
