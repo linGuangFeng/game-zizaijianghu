@@ -7,7 +7,7 @@
 - 用户提供原版站点 https://h5.7k7k.com/；已找到具体入口（见 reference-evidence.md）；游戏内页面、玩法、规则、数值及完整功能范围待调查，不得套用其他游戏实现。
 - 用户要求使用内部浏览器，禁止启动或控制宿主机浏览器。
 - 内部浏览器已恢复并连接 Codex In-app Browser（type=iab，id=2）；已打开准确入口、截图并实际点击用户登录与微信登录。恢复证据见 browser-repair.md；这些原版调查操作不算本地游戏测试 PASS。
-- 平台已注册并自动登录，用户已同意游戏协议；已观察 Unity WebGL 选服页，证据为 `docs/evidence/original-server-select.png`。尚未进入推荐服，游戏内功能、数值及完整范围待调查，登录不再等待条款确认。
+- 平台已注册并自动登录，用户已同意游戏协议；已进入推荐服并完成创角、首屏与首次剧情取证，见 `docs/evidence/README.md` 和 `docs/character-creation-spec.md`。其他游戏内功能、数值及完整范围待调查，登录不再等待条款确认。
 - 当前尚无可运行实现、接口契约及测试数据，相关验收为 NOT_RUN。
 - 本地测试阶段充值直接成功；该要求不授权在原站执行真实付款。
 

@@ -1,0 +1,34 @@
+:root { color-scheme: light; font-family: "Microsoft YaHei", sans-serif; color: #243d3e; background: #182b30; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: flex; justify-content: center; }
+.game-shell { width: min(100%, 405px); min-height: 100svh; padding: 32px 28px 24px; display: flex; flex-direction: column; background: #f0f2ee; border-inline: 1px solid #7b9694; }
+header { text-align: center; }
+.eyebrow { margin: 0 0 9px; color: #617c7b; font-family: serif; letter-spacing: .3em; }
+h1 { margin: 0; font-size: 25px; font-weight: 500; letter-spacing: .1em; }
+h2 { margin: 0 0 16px; font-size: 17px; font-weight: 500; }
+.portrait-area { flex: 1; min-height: 255px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-block: 30px; }
+.character-mark { width: 125px; height: 125px; border: 1px solid #9cad9e; display: grid; place-items: center; border-radius: 50%; color: #536e67; font-family: serif; font-size: 57px; background: #e4e9e1; }
+#appearance-caption { margin: 20px 0 0; letter-spacing: .2em; font-size: 18px; }
+.status { min-height: 26px; margin: 0 0 14px; color: #5f7270; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+.status.error { color: #a1382e; }
+.options { display: flex; gap: 12px; margin-bottom: 22px; }
+button, input { font: inherit; }
+button { min-height: 45px; border: 1px solid #7c9b96; border-radius: 3px; cursor: pointer; padding: 11px 18px; }
+.options button { flex: 1; background: transparent; color: #355653; }
+.options button[aria-pressed="true"] { background: #d6e5de; border: 2px solid #426f66; font-weight: 700; }
+.primary { width: 100%; color: #fff; background: #427c74; }
+.secondary { color: #355653; background: #e4ebe7; }
+button:disabled { cursor: default; opacity: .5; }
+button:focus-visible, input:focus-visible { outline: 3px solid #bd8837; outline-offset: 3px; }
+label { display: block; margin-bottom: 10px; }
+input { width: 100%; height: 46px; padding: 10px 12px; border: 1px solid #8ea5a0; border-radius: 3px; background: #fff; color: #243d3e; }
+.actions { display: flex; gap: 12px; margin-top: 24px; }
+.actions .secondary { flex: 1; }
+.actions .primary { flex: 2; }
+dl { margin: 0; }
+dl div { display: flex; justify-content: space-between; gap: 16px; padding-block: 14px; border-top: 1px solid #c7d3cc; }
+dt { color: #617c7b; flex-shrink: 0; }
+dd { margin: 0; overflow-wrap: anywhere; }
+#retry-button { width: 100%; }
+[hidden] { display: none !important; }
+@media (max-height: 650px) { .game-shell { padding-top: 20px; } .portrait-area { min-height: 190px; padding-block: 20px; } }

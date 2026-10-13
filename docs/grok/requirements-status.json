@@ -1,14 +1,15 @@
 {
   "exit_code": null,
   "ended_at": null,
-  "recorded_at": "2026-10-12T23:12:17.5863864+08:00",
+  "recorded_at": "2026-10-13T10:29:02.3900384+08:00",
   "reasoning_effort": "xhigh",
-  "reason": "Automatic approval rejected transmitting project documents and screenshot to Grok: trusted authorization for payload and destination required.",
+  "reason": "该命令会将内部项目文档和游戏截图发送至外部 Grok 服务；当前可接受证据未直接授权这一具体目的地与完整载荷，属于未经授权的敏感数据外发。",
   "status": "BLOCKED_APPROVAL",
   "model": "grok-4.7",
   "grok_invoked": false,
-  "notification": "sent: 01a130a8-52e9-74c2-abf5-92c883bcc001; evidence: .local/orchestration/requirements/notify-blocked-response.json",
+  "notification": "sent: 01a130a8-52e9-74c2-abf5-92c883bcc001; evidence: .local/orchestration/requirements/notify-resume-blocked-response.json",
   "role": "requirements-review",
   "started_at": null,
-  "session_id": null
+  "session_id": null,
+  "authorization_checked": ".local/orchestration/requirements/auth-response.json: official read_thread confirms human continuation after explicit Grok data-sharing question"
 }

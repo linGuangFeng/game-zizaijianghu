@@ -1,7 +1,7 @@
 {
   "role": "independent-qa",
   "status": "BLOCKED",
-  "blocker": "Automatic approval review rejected project-document egress to Grok and notification to listener; explicit approval in this chat is required.",
+  "blocker": "该命令会将项目文档提示词发送至外部 Grok 服务；当前可信用户消息仅说明可查看本地 grok.cli，未明确授权这些具体文档及其目的地的敏感数据外发。",
   "model_requested": "grok-4.7",
   "model_confirmed": null,
   "reasoning_effort_requested": "xhigh",
@@ -9,7 +9,7 @@
   "started_at": null,
   "ended_at": null,
   "exit_code": null,
-  "updated_at": "2026-10-12T23:14:21.1034783+08:00",
+  "updated_at": "2026-10-13T10:29:37.3656814+08:00",
   "timezone": "Australia/Perth",
   "grok_started": false,
   "grok_review_completed": false,
@@ -25,7 +25,10 @@
   "source_user_message_id": "01a130a1-ff08-7603-a76c-8771f899b944",
   "approval_rejections": [
     "Grok execution rejected before process creation: private project document egress authorization not accepted.",
-    "Listener notification rejected before process creation: source-thread approval not accepted."
+    "Listener notification rejected before process creation: source-thread approval not accepted.",
+    "该命令会将项目文档提示词发送至外部 Grok 服务；当前可信用户消息仅说明可查看本地 grok.cli，未明确授权这些具体文档及其目的地的敏感数据外发。",
+    "该命令会向另一聊天发送内部 QA 状态、项目路径和授权相关信息；可信用户消息未明确授权向这一具体目的地发送这些内容，属于未获授权的敏感外发。"
   ],
-  "required_approval": "Allow the prepared QA project materials to be sent to local Grok CLI grok-4.7 and results/blockers to the designated listener chat."
+  "required_approval": "Allow the prepared QA project materials to be sent to local Grok CLI grok-4.7 and results/blockers to the designated listener chat.",
+  "latest_authorization_verified": "Official read_thread verified explicit project-documents/screenshots-to-Grok and listener reporting question followed by user: 那就继续呀，我看人物都中断了。 Auto-review nevertheless rejected before process creation."
 }

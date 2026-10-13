@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>自在江湖 · 角色</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <main class="game-shell" aria-labelledby="title">
+    <header><p class="eyebrow">自在江湖</p><h1 id="title">创建角色</h1></header>
+    <section class="portrait-area" aria-label="角色选择">
+      <div class="character-mark" id="character-mark" aria-hidden="true">侠</div>
+      <p id="appearance-caption">选择角色</p>
+    </section>
+    <p id="status" class="status" role="status" aria-live="polite">正在读取角色……</p>
+    <section id="appearance-step" hidden aria-labelledby="appearance-title">
+      <h2 id="appearance-title">选择性别</h2>
+      <div id="appearance-options" class="options" role="group" aria-label="性别"></div>
+      <button id="next-button" class="primary" type="button" disabled>下一步</button>
+    </section>
+    <form id="name-step" hidden>
+      <label for="character-name">角色名称</label>
+      <input id="character-name" name="name" type="text" autocomplete="off" placeholder="输入角色名称">
+      <div class="actions"><button id="back-button" class="secondary" type="button">返回</button><button id="save-button" class="primary" type="submit">保存角色</button></div>
+    </form>
+    <section id="saved-step" hidden aria-labelledby="saved-title">
+      <h2 id="saved-title">我的角色</h2>
+      <dl><div><dt>角色名称</dt><dd id="saved-name"></dd></div><div><dt>性别</dt><dd id="saved-appearance"></dd></div></dl>
+    </section>
+    <button id="retry-button" class="secondary" type="button" hidden>重新读取</button>
+  </main>
+</body>
+</html>

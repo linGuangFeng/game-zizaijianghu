@@ -1,0 +1,12 @@
+{
+  "name": "game-zizaijianghu",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local character persistence foundation; original game behavior remains under investigation",
+  "engines": { "node": ">=22.0.0" },
+  "scripts": {
+    "start": "node server/index.js",
+    "test": "node --test test/server/*.test.js"
+  }
+}
