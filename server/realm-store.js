@@ -8,6 +8,25 @@ export const realmTraining = [
   { id: 'stance', name: '站桩', limit: 10, cost: 12, attribute: 'defense', gain: 1 },
   { id: 'run', name: '拉练', limit: 10, cost: 12, attribute: 'health', gain: 100 },
 ];
+export const ninthTrainingTypes = [
+  { id: 'trial', name: '练武', displayTarget: 53, cost: 16, attribute: 'attack', gain: 2 },
+  { id: 'stance', name: '聚气', displayTarget: 53, cost: 16, attribute: 'defense', gain: 1 },
+  { id: 'run', name: '调息', displayTarget: 53, cost: 16, attribute: 'health', gain: 110 },
+];
+function ninthProgress(data) {
+  return data.ninthTraining ?? { counts: { trial: 0, stance: 0, run: 0 }, stage: 1 };
+}
+function validNinthTraining(data) {
+  if (data.ninthTraining === undefined) return true;
+  const progress = data.ninthTraining;
+  if (!data.advanced || progress === null || typeof progress !== 'object' || Array.isArray(progress)
+    || Object.keys(progress).length !== 2 || ![1, 2].includes(progress.stage)
+    || progress.counts === null || typeof progress.counts !== 'object' || Array.isArray(progress.counts)
+    || Object.keys(progress.counts).length !== 3
+    || !ninthTrainingTypes.every(({ id }) => Number.isInteger(progress.counts[id]) && progress.counts[id] >= 0)) return false;
+  const total = Object.values(progress.counts).reduce((sum, count) => sum + count, 0);
+  return progress.stage === 1 ? total < 39 : total === 39;
+}
 export const breakthroughConditions = [
   { id: 'event5', label: '通关事件5', current: 1, target: 1 },
   { id: 'martial2', label: '装配2本武学', current: 2, target: 2 },
@@ -16,7 +35,7 @@ export const breakthroughConditions = [
 const breakthroughCheckpoint = 'observed-before-first-breakthrough';
 const breakthroughReward = { id: 'baodian-token-reference', name: '宝典令', amount: 5 };
 function validBreakthrough(data) {
-  return typeof data.advanced === 'boolean' && Array.isArray(data.receipts)
+  return typeof data.advanced === 'boolean' && validNinthTraining(data) && Array.isArray(data.receipts)
     && new Set(data.receipts.map((receipt) => receipt?.conditionId)).size === data.receipts.length
     && data.receipts.every((receipt) => breakthroughConditions.some(({ id }) => id === receipt?.conditionId)
       && receipt.id === 'first-breakthrough-' + receipt.conditionId
@@ -104,7 +123,17 @@ export async function createRealmStore({ file, checkpoint, character }) {
       conditions: breakthroughConditions.map((condition) => ({ ...condition,
         claimed: saved.receipts.some((receipt) => receipt.conditionId === condition.id), reward: { ...breakthroughReward } })),
       receipts: structuredClone(saved.receipts), advanced: saved.advanced,
+      ninthTraining: saved.advanced ? ninthTrainingState() : null,
       canAdvance: !saved.advanced && saved.receipts.length === breakthroughConditions.length,
+    };
+  }
+  function ninthTrainingState() {
+    const { counts, stage } = ninthProgress(saved);
+    const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+    return {
+      stage, stageName: stage === 1 ? '第一重' : '第二重', total, supported: stage === 1,
+      progress: { current: stage === 1 ? total : 0, target: stage === 1 ? 39 : 54 },
+      training: ninthTrainingTypes.map((training) => ({ ...training, count: counts[training.id] })),
     };
   }
   let queue = Promise.resolve();
@@ -127,8 +156,33 @@ export async function createRealmStore({ file, checkpoint, character }) {
     queue = operation.catch(() => {});
     return operation;
   }
+  function trainNinth(trainingId, expectedRevision, getCharacter) {
+    const operation = queue.then(async () => {
+      const character = getCharacter();
+      const state = breakthroughStateFor(character);
+      if (saved.revision !== expectedRevision) throw new RealmStateError(409, 'realm_revision_conflict');
+      if (!saved.advanced) throw new RealmStateError(409, 'realm_breakthrough_required');
+      if (!state.ninthTraining.supported) throw new RealmStateError(409, 'realm_training_not_observed');
+      const training = ninthTrainingTypes.find(({ id }) => id === trainingId);
+      if (saved.experience < training.cost) throw new RealmStateError(409, 'realm_experience_insufficient');
+      const current = ninthProgress(saved);
+      const counts = { ...current.counts, [trainingId]: current.counts[trainingId] + 1 };
+      const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+      const attributes = { ...saved.attributes, [training.attribute]: saved.attributes[training.attribute] + training.gain };
+      if (total === 39) {
+        // Only this observed first-to-second stage transition is implemented.
+        attributes.attack += 10; attributes.defense += 5; attributes.health += 500;
+      }
+      await persist({ ...saved, revision: saved.revision + 1, experience: saved.experience - training.cost,
+        attributes, ninthTraining: { counts, stage: total === 39 ? 2 : 1 } });
+      return breakthroughStateFor(character);
+    });
+    queue = operation.catch(() => {});
+    return operation;
+  }
   return {
     get: stateFor,
+    trainNinth,
     getBreakthrough: breakthroughStateFor,
     claimBreakthrough: breakthroughAction,
     advanceBreakthrough: (revision, getCharacter) => breakthroughAction(null, revision, getCharacter),

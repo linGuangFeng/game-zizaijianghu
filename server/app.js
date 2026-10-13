@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { createGearStore, GearStateError, gearItems } from './gear-store.js';
-import { createRealmStore, RealmStateError, realmTraining, breakthroughConditions } from './realm-store.js';
+import { createRealmStore, RealmStateError, realmTraining, breakthroughConditions, ninthTrainingTypes } from './realm-store.js';
 import { martialCatalog } from './martial-catalog.js';
 import { createMartialStore, MartialStateError } from './martial-store.js';
 import { readFile, realpath, stat } from 'node:fs/promises';
@@ -162,6 +162,16 @@ export async function createApp({ saveFile, clientDirectory, martialSaveFile = `
           ? await realmStore.claimBreakthrough(body.conditionId, body.expectedRevision, () => store.get())
           : await realmStore.advanceBreakthrough(body.expectedRevision, () => store.get());
         return json(response, 200, { state });
+      }
+      if (pathname === '/api/breakthrough-state/train') {
+        if (request.method !== 'POST') return json(response, 405, { error: 'method_not_allowed' });
+        const body = await readJson(request);
+        if (body === null || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).length !== 2
+          || !ninthTrainingTypes.some(({ id }) => id === body.training)
+          || !Number.isSafeInteger(body.expectedRevision) || body.expectedRevision < 0) {
+          return json(response, 400, { error: 'invalid_ninth_training' });
+        }
+        return json(response, 200, { state: await realmStore.trainNinth(body.training, body.expectedRevision, () => store.get()) });
       }
       if (pathname === '/api/gear-state') {
         return request.method === 'GET'

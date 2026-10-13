@@ -1,5 +1,5 @@
 const byId = (id) => document.getElementById(id);
-const panels = ['appearance-step', 'name-step', 'jianghu-panel', 'saved-step', 'martial-list', 'martial-detail', 'equipment-panel', 'realm-panel', 'gear-panel', 'breakthrough-panel', 'player-martial-detail'];
+const panels = ['appearance-step', 'name-step', 'jianghu-panel', 'saved-step', 'martial-list', 'martial-detail', 'equipment-panel', 'realm-panel', 'gear-panel', 'breakthrough-panel', 'player-martial-detail', 'ninth-training-panel'];
 const genderLabels = {
   'male-reference-0002': '男',
   'female-reference-0003': '女',
@@ -15,7 +15,7 @@ function status(message, error = false) {
 
 function showPanel(id) {
   document.querySelector('.game-shell').classList.toggle('is-jianghu', id === 'jianghu-panel');
-  byId('portrait-area').hidden = id === 'martial-list' || id === 'martial-detail' || id === 'equipment-panel' || id === 'jianghu-panel' || id === 'realm-panel' || id === 'gear-panel' || id === 'breakthrough-panel' || id === 'player-martial-detail';
+  byId('portrait-area').hidden = id === 'martial-list' || id === 'martial-detail' || id === 'equipment-panel' || id === 'jianghu-panel' || id === 'realm-panel' || id === 'gear-panel' || id === 'breakthrough-panel' || id === 'player-martial-detail' || id === 'ninth-training-panel';
   for (const panel of panels) byId(panel).hidden = panel !== id;
 }
 
@@ -743,9 +743,9 @@ let breakthroughBusy = false;
 let breakthroughReady = false;
 
 function breakthroughControls() {
-  for (const button of byId('breakthrough-panel').querySelectorAll('button')) {
-    const navigation = button.id === 'back-breakthrough' || button.id === 'retry-breakthrough' || button.id === 'close-breakthrough-reward';
-    button.disabled = breakthroughBusy || (!navigation && !breakthroughReady) || button.dataset.claimed === 'true';
+  for (const button of document.querySelectorAll('#breakthrough-panel button, #ninth-training-panel button')) {
+    const navigation = button.id === 'back-breakthrough' || button.id === 'retry-breakthrough' || button.id === 'close-breakthrough-reward' || button.id === 'back-ninth' || button.id === 'retry-ninth';
+    button.disabled = breakthroughBusy || (!navigation && !breakthroughReady) || button.dataset.claimed === 'true' || button.dataset.unsupported === 'true';
   }
   byId('retry-breakthrough-entry').disabled = breakthroughBusy;
 }
@@ -779,6 +779,8 @@ function displayBreakthrough(state) {
   }
   byId('advance-breakthrough').hidden = !state.canAdvance;
   byId('breakthrough-result').hidden = !state.advanced;
+  byId('open-ninth-training').hidden = !state.ninthTraining;
+  displayNinthTraining(state);
 }
 
 async function readBreakthrough() {
@@ -787,6 +789,7 @@ async function readBreakthrough() {
   breakthroughControls();
   byId('retry-breakthrough-entry').hidden = true;
   byId('retry-breakthrough').hidden = true;
+  byId('retry-ninth').hidden = true;
   try {
     const response = await fetch('/api/breakthrough-state');
     if (request !== breakthroughRequest) return;
@@ -797,7 +800,7 @@ async function readBreakthrough() {
       byId('breakthrough-conditions').replaceChildren();
       byId('breakthrough-reward').hidden = true;
       byId('breakthrough-result').hidden = true;
-      if (!byId('breakthrough-panel').hidden) showRealmProfile();
+      if (!byId('breakthrough-panel').hidden || !byId('ninth-training-panel').hidden) showRealmProfile();
       return;
     }
     if (!response.ok) throw new Error('read_failed');
@@ -808,12 +811,15 @@ async function readBreakthrough() {
     byId('open-breakthrough').hidden = false;
     byId('breakthrough-entry-message').textContent = '';
     byId('breakthrough-message').textContent = '';
+    byId('ninth-message').textContent = '';
     breakthroughControls();
   } catch {
     if (request !== breakthroughRequest) return;
     byId('breakthrough-entry-message').textContent = '突破记录读取失败，请重试。';
     byId('breakthrough-message').textContent = '突破记录读取失败，请重试。';
     byId('retry-breakthrough-entry').hidden = false;
+    byId('retry-ninth').hidden = false;
+    byId('ninth-message').textContent = '修炼记录读取失败，请重试。';
     byId('retry-breakthrough').hidden = false;
   }
 }
@@ -959,4 +965,88 @@ byId('upgrade-martial').addEventListener('click', async () => {
     byId('retry-player-martial').disabled = false;
     displayPlayerMartial();
   }
+});
+
+function displayNinthTraining(state) {
+  const ninth = state.ninthTraining;
+  byId('ninth-training-cards').replaceChildren();
+  if (!ninth) return;
+  byId('ninth-training-title').textContent = `${state.realm.name} · ${ninth.stageName}`;
+  byId('ninth-resource').textContent = `${state.resource.name}：${state.resource.amount}`;
+  byId('ninth-progress').textContent = `${ninth.progress.current}/${ninth.progress.target}`;
+  byId('ninth-attributes').replaceChildren();
+  for (const [key, label] of Object.entries(realmAttributeNames)) {
+    addFact(byId('ninth-attributes'), label, '+' + state.realm.attributes[key]);
+  }
+  for (const training of ninth.training) {
+    const card = document.createElement('div');
+    card.className = 'realm-training-card';
+    const name = document.createElement('strong');
+    name.textContent = `${training.name}(${training.count}/${training.displayTarget})`;
+    const attribute = document.createElement('span');
+    attribute.textContent = `${realmAttributeNames[training.attribute]} +${training.count * training.gain}`;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.unsupported = String(!ninth.supported);
+    button.textContent = ninth.supported ? `${state.resource.name} ${training.cost}` : '暂未开放';
+    button.setAttribute('aria-label', `${training.name}：${button.textContent}`);
+    button.addEventListener('click', () => trainNinth(training.id));
+    card.append(name, attribute, button);
+    byId('ninth-training-cards').append(card);
+  }
+  byId('ninth-limit').textContent = !ninth.supported ? '第二重修炼暂未开放' : state.resource.amount < ninth.training[0].cost ? '江湖阅历不足' : '';
+}
+
+async function trainNinth(training) {
+  if (breakthroughBusy || !breakthroughReady) return;
+  breakthroughBusy = true;
+  ++breakthroughRequest;
+  breakthroughControls();
+  byId('ninth-message').textContent = '正在修炼……';
+  try {
+    const response = await fetch('/api/breakthrough-state/train', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ training, expectedRevision: breakthroughState.revision }),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      if (result.error === 'realm_revision_conflict') {
+        await readBreakthrough();
+        if (breakthroughReady) byId('ninth-message').textContent = '修炼记录已更新，请重新选择。';
+        return;
+      }
+      const messages = {
+        realm_experience_insufficient: '江湖阅历不足，请重新读取修炼。',
+        realm_training_not_observed: '第二重修炼暂未开放，请重新读取修炼。',
+        realm_breakthrough_required: '请先完成突破，再重新读取修炼。',
+      };
+      throw new Error(messages[result.error] || '修炼结果暂未确认，请重新读取修炼。');
+    }
+    displayBreakthrough(result.state);
+    byId('ninth-message').textContent = result.state.ninthTraining.supported ? '修炼成功' : '已进入第二重';
+  } catch (error) {
+    breakthroughReady = false;
+    const known = ['江湖阅历不足，请重新读取修炼。', '第二重修炼暂未开放，请重新读取修炼。', '请先完成突破，再重新读取修炼。'];
+    byId('ninth-message').textContent = known.includes(error.message) ? error.message : '修炼结果暂未确认，请重新读取修炼。';
+    byId('retry-ninth').hidden = false;
+  } finally {
+    breakthroughBusy = false;
+    breakthroughControls();
+  }
+}
+
+byId('open-ninth-training').addEventListener('click', () => {
+  showPanel('ninth-training-panel');
+  byId('title').textContent = '境界修炼';
+  status('');
+  byId('ninth-message').textContent = '正在读取修炼……';
+  readBreakthrough();
+});
+byId('retry-ninth').addEventListener('click', readBreakthrough);
+byId('back-ninth').addEventListener('click', () => {
+  showPanel('breakthrough-panel');
+  byId('title').textContent = '境界突破';
+  status('');
+  readBreakthrough();
 });
