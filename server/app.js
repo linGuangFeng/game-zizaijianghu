@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { createGearStore, GearStateError, gearItems } from './gear-store.js';
-import { createRealmStore, RealmStateError, realmTraining } from './realm-store.js';
+import { createRealmStore, RealmStateError, realmTraining, breakthroughConditions } from './realm-store.js';
 import { martialCatalog } from './martial-catalog.js';
 import { createMartialStore, MartialStateError } from './martial-store.js';
 import { readFile, realpath, stat } from 'node:fs/promises';
@@ -133,6 +133,26 @@ export async function createApp({ saveFile, clientDirectory, martialSaveFile = `
           return json(response, 400, { error: 'invalid_realm_training' });
         }
         return json(response, 200, { state: await realmStore.train(body.training, body.expectedRevision, () => store.get()) });
+      }
+      if (pathname === '/api/breakthrough-state') {
+        return request.method === 'GET'
+          ? json(response, 200, { state: realmStore.getBreakthrough(store.get()) })
+          : json(response, 405, { error: 'method_not_allowed' });
+      }
+      if (pathname === '/api/breakthrough-state/claim' || pathname === '/api/breakthrough-state/advance') {
+        if (request.method !== 'POST') return json(response, 405, { error: 'method_not_allowed' });
+        const body = await readJson(request);
+        const claim = pathname.endsWith('/claim');
+        if (body === null || typeof body !== 'object' || Array.isArray(body)
+          || Object.keys(body).length !== (claim ? 2 : 1)
+          || !Number.isSafeInteger(body.expectedRevision) || body.expectedRevision < 0
+          || (claim && !breakthroughConditions.some(({ id }) => id === body.conditionId))) {
+          return json(response, 400, { error: claim ? 'invalid_breakthrough_claim' : 'invalid_breakthrough_advance' });
+        }
+        const state = claim
+          ? await realmStore.claimBreakthrough(body.conditionId, body.expectedRevision, () => store.get())
+          : await realmStore.advanceBreakthrough(body.expectedRevision, () => store.get());
+        return json(response, 200, { state });
       }
       if (pathname === '/api/gear-state') {
         return request.method === 'GET'

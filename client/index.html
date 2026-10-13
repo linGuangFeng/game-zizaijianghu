@@ -34,7 +34,26 @@
     </section>
     <section id="saved-step" hidden aria-labelledby="saved-title">
       <h2 id="saved-title">我的角色</h2>
-      <dl><div><dt>角色名称</dt><dd id="saved-name"></dd></div><div><dt>性别</dt><dd id="saved-appearance"></dd></div></dl><button id="open-gear" class="primary" type="button" hidden>装备</button><p id="gear-entry-message" class="status" role="status"></p><button id="retry-gear-entry" class="secondary" type="button" hidden>重新读取装备</button><button id="open-realm" class="primary" type="button" hidden>境界</button><p id="realm-entry-message" class="status" role="status"></p><button id="retry-realm-entry" class="secondary" type="button" hidden>重新读取境界</button><button id="open-martial" class="primary" type="button">武学图鉴</button><button id="back-jianghu" class="secondary" type="button">返回江湖</button>
+      <dl><div><dt>角色名称</dt><dd id="saved-name"></dd></div><div><dt>性别</dt><dd id="saved-appearance"></dd></div></dl><button id="open-breakthrough" class="primary" type="button" hidden>境界突破</button><p id="breakthrough-entry-message" class="status" role="status"></p><button id="retry-breakthrough-entry" class="secondary" type="button" hidden>重新读取突破</button><button id="open-gear" class="primary" type="button" hidden>装备</button><p id="gear-entry-message" class="status" role="status"></p><button id="retry-gear-entry" class="secondary" type="button" hidden>重新读取装备</button><button id="open-realm" class="primary" type="button" hidden>境界</button><p id="realm-entry-message" class="status" role="status"></p><button id="retry-realm-entry" class="secondary" type="button" hidden>重新读取境界</button><button id="open-martial" class="primary" type="button">武学图鉴</button><button id="back-jianghu" class="secondary" type="button">返回江湖</button>
+    </section>
+    <section id="breakthrough-panel" hidden aria-labelledby="breakthrough-realm">
+      <div class="realm-seat" aria-hidden="true">修炼</div>
+      <h2 id="breakthrough-realm"></h2>
+      <dl id="breakthrough-attributes"></dl>
+      <div id="breakthrough-conditions"></div>
+      <section id="breakthrough-reward" hidden aria-labelledby="breakthrough-reward-title">
+        <h3 id="breakthrough-reward-title">恭喜获得</h3><p id="breakthrough-reward-text"></p>
+        <button id="close-breakthrough-reward" class="secondary" type="button">关闭</button>
+      </section>
+      <section id="breakthrough-result" hidden aria-labelledby="breakthrough-result-title">
+        <h3 id="breakthrough-result-title">功力突破</h3>
+        <p>初入江湖 → 九品前期</p>
+        <dl><div><dt>攻击</dt><dd>30 → 40</dd></div><div><dt>防御</dt><dd>15 → 20</dd></div><div><dt>气血</dt><dd>2000 → 2500</dd></div><div><dt>领悟收益</dt><dd>100 → 150</dd></div></dl>
+      </section>
+      <p id="breakthrough-message" class="status" role="status" aria-live="polite"></p>
+      <button id="advance-breakthrough" class="primary" type="button" hidden>突破</button>
+      <button id="retry-breakthrough" class="secondary" type="button" hidden>重新读取突破</button>
+      <button id="back-breakthrough" class="secondary" type="button">返回角色</button>
     </section>
     <section id="gear-panel" hidden aria-labelledby="gear-title">
       <h2 id="gear-title">装备</h2>

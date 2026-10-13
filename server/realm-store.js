@@ -8,6 +8,22 @@ export const realmTraining = [
   { id: 'stance', name: '站桩', limit: 10, cost: 12, attribute: 'defense', gain: 1 },
   { id: 'run', name: '拉练', limit: 10, cost: 12, attribute: 'health', gain: 100 },
 ];
+export const breakthroughConditions = [
+  { id: 'event5', label: '通关事件5', current: 1, target: 1 },
+  { id: 'martial2', label: '装配2本武学', current: 2, target: 2 },
+  { id: 'training30', label: '境界修炼30次', current: 30, target: 30 },
+];
+const breakthroughCheckpoint = 'observed-before-first-breakthrough';
+const breakthroughReward = { id: 'baodian-token-reference', name: '宝典令', amount: 5 };
+function validBreakthrough(data) {
+  return typeof data.advanced === 'boolean' && Array.isArray(data.receipts)
+    && new Set(data.receipts.map((receipt) => receipt?.conditionId)).size === data.receipts.length
+    && data.receipts.every((receipt) => breakthroughConditions.some(({ id }) => id === receipt?.conditionId)
+      && receipt.id === 'first-breakthrough-' + receipt.conditionId
+      && receipt.reward?.id === breakthroughReward.id && receipt.reward?.name === breakthroughReward.name
+      && receipt.reward?.amount === breakthroughReward.amount)
+    && (!data.advanced || data.receipts.length === breakthroughConditions.length);
+}
 export class RealmStateError extends Error {
   constructor(statusCode, errorCode) {
     super(errorCode);
@@ -16,11 +32,12 @@ export class RealmStateError extends Error {
   }
 }
 export async function createRealmStore({ file, checkpoint, character }) {
-  if (checkpoint !== undefined && checkpoint !== 'observed-before-training') throw new Error('Unknown local realm checkpoint.');
+  if (checkpoint !== undefined && !['observed-before-training', breakthroughCheckpoint].includes(checkpoint)) throw new Error('Unknown local realm checkpoint.');
   let saved = null;
   try {
     saved = JSON.parse(await readFile(file, 'utf8'));
-    if (saved?.checkpoint !== 'observed-before-training' || !isCharacter(saved.character)
+    if (!['observed-before-training', breakthroughCheckpoint].includes(saved?.checkpoint) || !isCharacter(saved.character)
+      || (saved.checkpoint === breakthroughCheckpoint && !validBreakthrough(saved))
       || !Number.isSafeInteger(saved.revision) || saved.revision < 0
       || !Number.isSafeInteger(saved.experience) || saved.experience < 0
       || !Number.isSafeInteger(saved.totalTraining) || saved.totalTraining < 0
@@ -44,15 +61,21 @@ export async function createRealmStore({ file, checkpoint, character }) {
     if (character === null) throw new Error('Create a local character before starting the realm checkpoint.');
     await persist({
       checkpoint, character: { ...character }, revision: 0, experience: 120,
-      counts: { trial: 0, stance: 0, run: 0 }, attributes: { attack: 10, defense: 5, health: 1000 }, totalTraining: 0,
+      ...(checkpoint === breakthroughCheckpoint
+        ? { counts: { trial: 10, stance: 10, run: 10 }, attributes: { attack: 30, defense: 15, health: 2000 }, totalTraining: 30, receipts: [], advanced: false }
+        : { counts: { trial: 0, stance: 0, run: 0 }, attributes: { attack: 10, defense: 5, health: 1000 }, totalTraining: 0 }),
     });
   }
-  function stateFor(character) {
+  function checkBinding(character) {
     if (character === null) throw new RealmStateError(404, 'character_not_found');
     if (saved === null) throw new RealmStateError(404, 'realm_checkpoint_not_initialized');
     if (saved.character.name !== character.name || saved.character.appearanceId !== character.appearanceId) {
       throw new RealmStateError(409, 'realm_checkpoint_character_mismatch');
     }
+  }
+  function stateFor(character) {
+    checkBinding(character);
+    if (saved.checkpoint !== 'observed-before-training') throw new RealmStateError(404, 'realm_training_checkpoint_unavailable');
     return {
       kind: 'local-realm-checkpoint', checkpoint: saved.checkpoint, revision: saved.revision,
       resource: { id: 'jianghu-experience', name: '江湖阅历', amount: saved.experience },
@@ -65,9 +88,50 @@ export async function createRealmStore({ file, checkpoint, character }) {
       task: { id: 'train10-reference', label: '累计修炼10次', current: Math.min(saved.totalTraining, 10), target: 10, completed: saved.totalTraining >= 10 },
     };
   }
+  function breakthroughStateFor(character) {
+    if (character === null) throw new RealmStateError(404, 'character_not_found');
+    if (saved === null) throw new RealmStateError(404, 'breakthrough_checkpoint_not_initialized');
+    checkBinding(character);
+    if (saved.checkpoint !== breakthroughCheckpoint) throw new RealmStateError(404, 'breakthrough_checkpoint_not_initialized');
+    return {
+      kind: 'local-breakthrough-checkpoint', checkpoint: saved.checkpoint, revision: saved.revision,
+      resource: { id: 'jianghu-experience', name: '江湖阅历', amount: saved.experience },
+      realm: {
+        id: saved.advanced ? 'ninth-early-reference' : 'initial-reference',
+        name: saved.advanced ? '九品前期' : '初入江湖',
+        attributes: { ...saved.attributes }, comprehensionGain: saved.advanced ? 150 : 100,
+      },
+      conditions: breakthroughConditions.map((condition) => ({ ...condition,
+        claimed: saved.receipts.some((receipt) => receipt.conditionId === condition.id), reward: { ...breakthroughReward } })),
+      receipts: structuredClone(saved.receipts), advanced: saved.advanced,
+      canAdvance: !saved.advanced && saved.receipts.length === breakthroughConditions.length,
+    };
+  }
   let queue = Promise.resolve();
+  function breakthroughAction(conditionId, expectedRevision, getCharacter) {
+    const operation = queue.then(async () => {
+      const character = getCharacter();
+      const state = breakthroughStateFor(character);
+      if (saved.revision !== expectedRevision) throw new RealmStateError(409, 'realm_revision_conflict');
+      if (conditionId !== null) {
+        if (saved.receipts.some((receipt) => receipt.conditionId === conditionId)) return state;
+        const receipt = { id: 'first-breakthrough-' + conditionId, conditionId, reward: { ...breakthroughReward } };
+        await persist({ ...saved, revision: saved.revision + 1, receipts: [...saved.receipts, receipt] });
+      } else {
+        if (saved.advanced) return state;
+        if (!state.canAdvance) throw new RealmStateError(409, 'breakthrough_conditions_unclaimed');
+        await persist({ ...saved, revision: saved.revision + 1, advanced: true, attributes: { attack: 40, defense: 20, health: 2500 } });
+      }
+      return breakthroughStateFor(character);
+    });
+    queue = operation.catch(() => {});
+    return operation;
+  }
   return {
     get: stateFor,
+    getBreakthrough: breakthroughStateFor,
+    claimBreakthrough: breakthroughAction,
+    advanceBreakthrough: (revision, getCharacter) => breakthroughAction(null, revision, getCharacter),
     train(trainingId, expectedRevision, getCharacter) {
       const operation = queue.then(async () => {
         const character = getCharacter();

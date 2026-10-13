@@ -451,3 +451,105 @@ owned 固定紫色→金色，代表本样本两种可选装备，没有数量�
 主会话内部浏览器已测普通无档、金色详情→紫色更换、断服失败保持展示与锁写、新进程重读紫色→一键金色、双页旧版本冲突只重读不自动再写、手动金色及刷新保留。页面由主会话执行，独立HTTP代理仅补录报告；已列路径通过，不代表全部竞态或原版视觉通过。
 
 本检查点没有自然解锁、背包数量、战斗掉落、领取奖励、卸下、强化或熔炼；其余装备只有固定背景贡献，未实现完整装备系统。不能将显式样本接入宣称为普通角色已自然通关事件5或整款游戏完成。
+
+## 首次突破检查点
+
+三个端点均为自建本地契约，只承载已取证的初入江湖→九品前期一次突破。普通角色不自动达成条件；突破内的事件5条件领取不等于主线事件5任务领取。
+
+### 启动与旧训练隔离
+
+使用已存在的独立本地角色，且该角色的境界存档尚未建立：
+
+```powershell
+$env:CHARACTER_SAVE_FILE = 'D:\work\hd\game-zizaijianghu\.local\breakthrough-qa-character.json'
+$env:REALM_CHECKPOINT = 'observed-before-first-breakthrough'
+$env:PORT = '3008'
+npm.cmd start
+```
+
+仍使用 REALM_SAVE_FILE，默认角色文件路径追加 `.realm.json`；不增加领奖文件。只在显式配置且无境界档时初始化。初始样本为初入江湖30/30、三类训练各10次、属性30/15/2000、领悟收益100、江湖阅历120，三项突破条件已达标但均未领取。
+
+已有 `observed-before-training` 文件不会被新flag覆盖或自动升级，GET不迁移。要测试突破应另用隔离角色/存档路径，不删除现有训练进度。旧训练检查点请求突破端点返回404 `breakthrough_checkpoint_not_initialized`；新突破检查点请求 `/api/realm-state` 或 `/api/realm-state/train` 返回404 `realm_training_checkpoint_unavailable`。客户端据此分别开放入口。旧训练检查点的原有响应与训练行为不变，新突破成功也不开放九品训练。
+
+### 精确接口
+
+`GET /api/breakthrough-state` 返回200，初始状态为：
+
+```json
+{
+  "state": {
+    "kind":"local-breakthrough-checkpoint",
+    "checkpoint":"observed-before-first-breakthrough",
+    "revision":0,
+    "resource":{"id":"jianghu-experience","name":"江湖阅历","amount":120},
+    "realm":{
+      "id":"initial-reference","name":"初入江湖",
+      "attributes":{"attack":30,"defense":15,"health":2000},"comprehensionGain":100
+    },
+    "conditions":[
+      {"id":"event5","label":"通关事件5","current":1,"target":1,"claimed":false,"reward":{"id":"baodian-token-reference","name":"宝典令","amount":5}},
+      {"id":"martial2","label":"装配2本武学","current":2,"target":2,"claimed":false,"reward":{"id":"baodian-token-reference","name":"宝典令","amount":5}},
+      {"id":"training30","label":"境界修炼30次","current":30,"target":30,"claimed":false,"reward":{"id":"baodian-token-reference","name":"宝典令","amount":5}}
+    ],
+    "receipts":[],"advanced":false,"canAdvance":false
+  }
+}
+```
+
+`POST /api/breakthrough-state/claim` 要求JSON媒体类型，正文恰好为：
+
+```json
+{"conditionId":"event5","expectedRevision":0}
+```
+
+conditionId 仅允许 event5、martial2、training30。首次成功领取使对应 claimed=true、revision加1，并在同一存档追加一条流水：
+
+```json
+{"id":"first-breakthrough-event5","conditionId":"event5","reward":{"id":"baodian-token-reference","name":"宝典令","amount":5}}
+```
+
+另两项流水ID分别为 first-breakthrough-martial2 和 first-breakthrough-training30。receipts 按成功领取顺序保存，只表示本检查点本次新增奖励，**不表示宝典令总余额**；初始总余额未知，接口不返回余额0或总余额15。claimed由已有流水确定，页面刷新不应将历史流水重新当作一次新奖励。
+
+三项全部领取后 canAdvance=true。`POST /api/breakthrough-state/advance` 正文恰好为：
+
+```json
+{"expectedRevision":3}
+```
+
+首次成功使revision加1、advanced=true、canAdvance=false，realm变为：
+
+```json
+{"id":"ninth-early-reference","name":"九品前期","attributes":{"attack":40,"defense":20,"health":2500},"comprehensionGain":150}
+```
+
+两个POST成功均返回200完整 `{state:...}`。三条流水与已领条件保留，江湖阅历始终120；突破本身不追加奖励流水，不领取主线任务。没有新境界训练次数、下一次突破或资源来源算法。
+
+### 持久化、版本与错误
+
+突破复用境界单文件与串行队列。领取流水、其所代表的条件领取状态及revision一次提交；突破状态、属性和revision一次提交。临时文件替换成功才更新内存，不跨角色、武学或装备存档多次发奖。既有realm字段保留，新增receipts与advanced；重启无需再次提供初始化flag。
+
+expectedRevision为非负安全整数，先检查版本再处理重复动作。当前版本重复领取已领条件或重复已成功突破返回200，不写档、不加版本或奖励；旧版本一律409冲突，包括重复动作。未领齐三项不得突破。重复请求和并发处理是本地工程约定，不声称原版重复点击行为已验证。遇响应不明或版本冲突应重读，不自动再次领奖或突破。
+
+| 状态 / error | 含义 |
+| --- | --- |
+| 404 character_not_found | 无本地角色 |
+| 404 breakthrough_checkpoint_not_initialized | 无境界档，或当前为旧训练检查点 |
+| 404 realm_training_checkpoint_unavailable | 新突破检查点调用旧训练状态/动作端点 |
+| 409 realm_checkpoint_character_mismatch | 角色与境界存档绑定不符，不重绑或清档 |
+| 409 realm_revision_conflict | 版本不是当前版本 |
+| 409 breakthrough_conditions_unclaimed | 仍有条件奖励未领取，不能突破 |
+| 400 invalid_breakthrough_claim | 条件ID、版本或正文结构不符 |
+| 400 invalid_breakthrough_advance | 版本或正文结构不符 |
+| 400 invalid_json | JSON无法解析 |
+| 415 json_required | 未声明JSON媒体类型 |
+| 413 body_too_large | 正文超过16 KiB |
+| 405 method_not_allowed | 状态路径非GET或动作路径非POST |
+| 500 local_operation_failed | 本地持久化等操作失败 |
+
+### 验证范围
+
+全部开发回归57/57通过，其中突破新增7项；独立真实HTTP QA 10/10通过，详见 [首次突破独立QA](breakthrough-qa.md)。覆盖领取/突破写失败原子性、同版本并发、防重复写、真实进程恢复、非法输入、绑定冲突、普通无档、训练/突破隔离及新flag不覆盖旧档。
+
+主会话内部浏览器已实际通过普通角色无入口、显式检查点三项领取、断连后锁写/重启重读、双页领取及突破版本冲突只读恢复；最终revision4、三条唯一流水、江湖阅历120不变。页面证据归主会话，不能将独立HTTP代理未操作浏览器的记录当作该代理页面验收。
+
+当前仍为显式检查点，不代表普通角色已自然完成事件5、装配2本和修炼30次；不实现主线领奖、令牌总余额、下一次突破、新境界训练或完整成长系统。

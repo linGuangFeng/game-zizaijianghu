@@ -1,5 +1,5 @@
 const byId = (id) => document.getElementById(id);
-const panels = ['appearance-step', 'name-step', 'jianghu-panel', 'saved-step', 'martial-list', 'martial-detail', 'equipment-panel', 'realm-panel', 'gear-panel'];
+const panels = ['appearance-step', 'name-step', 'jianghu-panel', 'saved-step', 'martial-list', 'martial-detail', 'equipment-panel', 'realm-panel', 'gear-panel', 'breakthrough-panel'];
 const genderLabels = {
   'male-reference-0002': '男',
   'female-reference-0003': '女',
@@ -14,7 +14,7 @@ function status(message, error = false) {
 }
 
 function showPanel(id) {
-  byId('portrait-area').hidden = id === 'martial-list' || id === 'martial-detail' || id === 'equipment-panel' || id === 'jianghu-panel' || id === 'realm-panel' || id === 'gear-panel';
+  byId('portrait-area').hidden = id === 'martial-list' || id === 'martial-detail' || id === 'equipment-panel' || id === 'jianghu-panel' || id === 'realm-panel' || id === 'gear-panel' || id === 'breakthrough-panel';
   for (const panel of panels) byId(panel).hidden = panel !== id;
 }
 
@@ -40,6 +40,7 @@ function showCharacter(character) {
   readCheckpoint();
   readRealm();
   readGear();
+  readBreakthrough();
 }
 
 async function readCharacter() {
@@ -719,3 +720,146 @@ byId('gear-auto').addEventListener('click', () => writeGear());
 byId('retry-gear').addEventListener('click', readGear);
 byId('retry-gear-entry').addEventListener('click', readGear);
 byId('back-gear').addEventListener('click', showRealmProfile);
+
+let breakthroughState = null;
+let breakthroughRequest = 0;
+let breakthroughBusy = false;
+let breakthroughReady = false;
+
+function breakthroughControls() {
+  for (const button of byId('breakthrough-panel').querySelectorAll('button')) {
+    const navigation = button.id === 'back-breakthrough' || button.id === 'retry-breakthrough' || button.id === 'close-breakthrough-reward';
+    button.disabled = breakthroughBusy || (!navigation && !breakthroughReady) || button.dataset.claimed === 'true';
+  }
+  byId('retry-breakthrough-entry').disabled = breakthroughBusy;
+}
+
+function displayBreakthrough(state) {
+  breakthroughState = state;
+  byId('breakthrough-realm').textContent = state.realm.name;
+  byId('breakthrough-attributes').replaceChildren();
+  for (const [label, value] of [
+    ['攻击', state.realm.attributes.attack], ['防御', state.realm.attributes.defense],
+    ['气血', state.realm.attributes.health], ['领悟收益', state.realm.comprehensionGain],
+  ]) addFact(byId('breakthrough-attributes'), label, value);
+  byId('breakthrough-conditions').replaceChildren();
+  for (const condition of state.conditions) {
+    const card = document.createElement('div');
+    card.className = 'breakthrough-condition';
+    const name = document.createElement('strong');
+    name.textContent = condition.label;
+    const progress = document.createElement('span');
+    progress.textContent = `${condition.current}/${condition.target}`;
+    const reward = document.createElement('span');
+    reward.textContent = `${condition.reward.name} ${condition.reward.amount}`;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.claimed = String(condition.claimed);
+    button.textContent = condition.claimed ? '已完成' : '完成';
+    button.setAttribute('aria-label', `${button.textContent}：${condition.label}`);
+    button.addEventListener('click', () => writeBreakthrough(condition.id));
+    card.append(name, reward, progress, button);
+    byId('breakthrough-conditions').append(card);
+  }
+  byId('advance-breakthrough').hidden = !state.canAdvance;
+  byId('breakthrough-result').hidden = !state.advanced;
+}
+
+async function readBreakthrough() {
+  const request = ++breakthroughRequest;
+  breakthroughReady = false;
+  breakthroughControls();
+  byId('retry-breakthrough-entry').hidden = true;
+  byId('retry-breakthrough').hidden = true;
+  try {
+    const response = await fetch('/api/breakthrough-state');
+    if (request !== breakthroughRequest) return;
+    if (response.status === 404) {
+      breakthroughState = null;
+      byId('open-breakthrough').hidden = true;
+      byId('breakthrough-entry-message').textContent = '';
+      byId('breakthrough-conditions').replaceChildren();
+      byId('breakthrough-reward').hidden = true;
+      byId('breakthrough-result').hidden = true;
+      if (!byId('breakthrough-panel').hidden) showRealmProfile();
+      return;
+    }
+    if (!response.ok) throw new Error('read_failed');
+    const result = await response.json();
+    if (request !== breakthroughRequest) return;
+    displayBreakthrough(result.state);
+    breakthroughReady = true;
+    byId('open-breakthrough').hidden = false;
+    byId('breakthrough-entry-message').textContent = '';
+    byId('breakthrough-message').textContent = '';
+    breakthroughControls();
+  } catch {
+    if (request !== breakthroughRequest) return;
+    byId('breakthrough-entry-message').textContent = '突破记录读取失败，请重试。';
+    byId('breakthrough-message').textContent = '突破记录读取失败，请重试。';
+    byId('retry-breakthrough-entry').hidden = false;
+    byId('retry-breakthrough').hidden = false;
+  }
+}
+
+async function writeBreakthrough(conditionId) {
+  if (breakthroughBusy || !breakthroughReady) return;
+  breakthroughBusy = true;
+  ++breakthroughRequest;
+  breakthroughControls();
+  byId('breakthrough-reward').hidden = true;
+  byId('breakthrough-message').textContent = conditionId ? '正在领取……' : '正在突破……';
+  const previousReceiptIds = new Set(breakthroughState.receipts.map((receipt) => receipt.id));
+  try {
+    const response = await fetch(conditionId ? '/api/breakthrough-state/claim' : '/api/breakthrough-state/advance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(conditionId ? { conditionId, expectedRevision: breakthroughState.revision } : { expectedRevision: breakthroughState.revision }),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      if (result.error === 'realm_revision_conflict') {
+        await readBreakthrough();
+        if (breakthroughReady) byId('breakthrough-message').textContent = '突破记录已更新，请重新选择。';
+        return;
+      }
+      if (result.error === 'breakthrough_conditions_unclaimed') {
+        byId('breakthrough-message').textContent = '请先完成三项条件奖励领取。';
+        return;
+      }
+      throw new Error(result.error === 'realm_checkpoint_character_mismatch' ? '突破记录与当前角色不匹配。' : 'write_failed');
+    }
+    displayBreakthrough(result.state);
+    if (conditionId) {
+      const receipt = result.state.receipts.find((item) => item.conditionId === conditionId && !previousReceiptIds.has(item.id));
+      if (receipt) {
+        byId('breakthrough-reward-text').textContent = `${receipt.reward.name} ${receipt.reward.amount}`;
+        byId('breakthrough-reward').hidden = false;
+      }
+      byId('breakthrough-message').textContent = receipt ? '领取成功' : '该奖励已领取';
+    } else {
+      byId('breakthrough-message').textContent = result.state.advanced ? '突破成功' : '';
+    }
+  } catch (error) {
+    breakthroughReady = false;
+    byId('breakthrough-message').textContent = error.message === '突破记录与当前角色不匹配。' ? error.message : '操作结果暂未确认，请重新读取突破。';
+    byId('retry-breakthrough').hidden = false;
+  } finally {
+    breakthroughBusy = false;
+    breakthroughControls();
+  }
+}
+
+byId('open-breakthrough').addEventListener('click', () => {
+  showPanel('breakthrough-panel');
+  byId('title').textContent = '境界突破';
+  byId('breakthrough-reward').hidden = true;
+  status('');
+  byId('breakthrough-message').textContent = '正在读取突破记录……';
+  readBreakthrough();
+});
+byId('close-breakthrough-reward').addEventListener('click', () => { byId('breakthrough-reward').hidden = true; });
+byId('advance-breakthrough').addEventListener('click', () => writeBreakthrough());
+byId('retry-breakthrough').addEventListener('click', readBreakthrough);
+byId('retry-breakthrough-entry').addEventListener('click', readBreakthrough);
+byId('back-breakthrough').addEventListener('click', showRealmProfile);

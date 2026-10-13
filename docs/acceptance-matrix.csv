@@ -1,6 +1,6 @@
 id,kind,requirement,reference,api_acceptance,ui_acceptance,status,blocker_or_next_step,evidence
 REQ-001,scope,完整复刻自在江湖,用户明确要求,已验证局部本地接口；全量契约待调查,已完成局部真实点击；自然流程与视觉未通过,BLOCKED,已进服并持续取证；普通角色主场景到事件与装备自然流程未实现；全量范围未闭合,docs/test-plan.md；docs/visual-asset-inventory.md
-REQ-002,testing,功能同时完成接口与页面点击验收,用户明确要求,七份局部独立QA报告已有实际接口结果,对应局部主会话内部浏览器结果已有记录,BLOCKED,局部双层验收已完成；全量游戏及正常角色实际闭环仍未实现和验收,docs/local-foundation-qa.md；docs/martial-manual-qa.md
+REQ-002,testing,功能同时完成接口与页面点击验收,用户明确要求,多份局部独立QA报告已有实际接口结果,对应局部主会话内部浏览器结果已有记录,BLOCKED,局部双层验收已完成；全量游戏及正常角色实际闭环仍未实现和验收,docs/local-foundation-qa.md；docs/martial-manual-qa.md
 REQ-003,environment,仅用内部浏览器且禁止宿主浏览器,用户明确要求,不适用,原版取证与本地页面点击均使用内部浏览器,PASS,仅环境与已记录使用方式通过；不代表原版视觉或游戏完成,docs/browser-repair.md；docs/local-foundation-qa.md
 REQ-004,payment,本地测试充值直接成功,用户明确要求,订单及权益待实现验收,充值入口与成功流程待实现验收,NOT_RUN,充值规则仍待调查；不得触发真实付款,
 REQ-005,authentication,必要时展示二维码等登录方式,用户明确要求,本地登录契约未验收,原版平台已注册自动登录并同意协议,NOT_RUN,原版不再受登录条款阻塞；本地登录功能仍未实现验收,docs/character-creation-spec.md
@@ -8,7 +8,7 @@ REQ-006,delivery,代码存放指定本机目录,用户明确要求,已有局部�
 REQ-007,delivery,上传指定Git仓库且失败时确认,用户明确要求,不适用,不适用,NOT_RUN,由主代理记录对应交付版本及最终远端结果；本次文档更新未检查或提交Git,
 REQ-008,coordination,代理分工且主会话监控运行,用户明确要求,不适用,不适用,NOT_RUN,分工与局部执行已有记录；持续监控及最终交付状态由主会话核对,docs/execution-plan.md
 DISC-001,investigation,确认实际游戏入口与可访问版本,原版已观察,原版通信协议仍待调查,已进入推荐服创角首屏并完成多轮原版操作,PASS,仅准确入口和游戏可访问已证实；不表示全系统取证完成,docs/character-creation-spec.md；docs/event1-evidence.md
-DISC-002,investigation,盘点页面入口及玩法规则,原版局部已观察,部分检查点采用本地契约不冒充原版接口,已取证创角首屏武学与事件1结果；装备前置继续调查,BLOCKED,完整系统清单与后续解锁仍未闭合,docs/character-creation-spec.md；docs/martial-evidence.md；docs/event1-evidence.md
+DISC-002,investigation,盘点页面入口及玩法规则,原版局部已观察,部分检查点采用本地契约不冒充原版接口,已取证事件5装备解锁与首次突破；原版L20现事件6任务0/1未进,BLOCKED,完整系统清单与后续解锁仍未闭合,docs/character-creation-spec.md；docs/martial-evidence.md；docs/event1-evidence.md
 DISC-003,investigation,确认数值资源奖励及持久化行为,原版局部已观察,显示数值不等于已掌握奖励或战斗公式,已观察角色及任务重登保留；武学全部持久规则仍未知,BLOCKED,事件过程及收益来源未证实；不得用本地重启测试证明原版保存规则,docs/event1-evidence.md；docs/evidence/original-reconnect-scene.jpg
 DISC-004,investigation,确认充值档位奖励及权益,原版待调查,待确认本地订单奖励契约,待调查原版充值界面,BLOCKED,已进服；充值具体规则与权益仍未取证,
 DISC-005,investigation,确认布局素材及交互基准,原版局部已观察,不适用,已有多页静态截图；独立原素材与动态音频不足,BLOCKED,现客户端仍用文字与CSS替代资产；1比1视觉未通过,docs/visual-asset-inventory.md
@@ -19,9 +19,11 @@ LOCAL-04,checkpoint,单技能卸下任务保留,observed-before-equip显式检�
 LOCAL-05,checkpoint,双技能一键装配,observed-event1-before-equip显式检查点,独立9项及旧接口回归通过,主会话顺序失败恢复刷新通过,PASS,不代表事件1战斗或获取过程已实现,docs/martial-two-qa.md
 LOCAL-06,checkpoint,双技能指定槽卸下,两技能已确认状态集合,独立10项通过,主会话指定红叉不前移失败恢复和重启通过,PASS,仅当前组合；不推广通用排序规则,docs/martial-two-remove-qa.md
 LOCAL-07,checkpoint,双技能手动卡片装配,两技能已确认状态集合,独立11项及19项旧接口回归通过,主会话卡片装卸双顺序空洞补位失败恢复及重启通过,PASS,已装卡片卸下由页面走独立卸下接口；不代表原版重复请求规则,docs/martial-manual-qa.md
-FLOW-01,full-flow,普通角色自然到达主场景与武学及装备,完整复刻目标,无检查点的前置任务与获取状态链待实现,从空存档创建角色后自然进入完整流程待实现,BLOCKED,现武学依赖显式检查点；没有主场景与装备实际闭环,docs/test-plan.md；docs/local-api.md
+FLOW-01,full-flow,普通角色自然到达主场景与武学及装备,完整复刻目标,无检查点的前置任务与获取状态链待实现,从空存档创建角色后自然进入完整流程待实现,BLOCKED,主场景导航已有；技能装备与突破仍依赖显式检查点；自然获取主线未闭环,docs/test-plan.md；docs/local-api.md
 VISUAL-01,visual,已取证页面1比1视觉与动画音频,完整复刻目标,不适用,当前为文字标记及CSS基础布局；未通过原版视觉验收,BLOCKED,角色背景图标字体动画音频独立素材缺失；禁止用局部接口通过代替视觉通过,docs/visual-asset-inventory.md
 EQUIP-01,full-flow,人物装备解锁获取穿戴与保存,完整复刻目标,已确认血战刀局部合同；全装备待扩展,原版事件5装备解锁及局部更换已证实,BLOCKED,不能把代码equipment-panel武学装配面板当作人物装备实现,docs/test-plan.md
 LOCAL-NAV,local-function,江湖导航容器与已实现页面往返,本地阶段交付,普通角色与检查点实际响应驱动入口,内部浏览器普通创角导航刷新及两种慢响应通过,PASS,仅容器导航；地图自然任务战斗和美术未完成,docs/main-scene-qa.md
-LOCAL-REALM,checkpoint,初入江湖三类训练事务,observed-before-training显式检查点,独立HTTP8项通过,主会话三类训练断服重读耗尽刷新双页冲突及人工上限通过,PASS,仅120阅历起点与train10；主线迁移突破资源获取美术未实现,docs/realm-qa.md
+LOCAL-REALM,checkpoint,初入江湖三类训练事务,observed-before-training显式检查点,独立HTTP8项通过,主会话三类训练断服重读耗尽刷新双页冲突及人工上限通过,PASS,仅120阅历起点与train10；首次突破另项局部PASS；自然迁移资源获取美术未实现,docs/realm-qa.md
 LOCAL-GEAR,checkpoint,血战刀金紫更换与一键穿戴,observed-event5-blade显式样本,独立HTTP8项通过,主会话更换失败恢复双页冲突手动金与刷新通过,PASS,固定其他装备背景贡献；无普通角色自然解锁与完整美术,docs/gear-qa.md
+LOCAL-BREAKTHROUGH,checkpoint,首次突破三条件领取与进阶,observed-before-first-breakthrough显式检查点,独立接口10/10通过；开发回归57/57通过,主会话内部浏览器真实点击通过,PASS,仅三项宝典令流水与首次九品前期突破；非完整境界自然主线或视觉1比1,docs/breakthrough-qa.md；docs/event5-equipment-evidence.md
+ONBOARDING-L21,investigation,新服自然开局连续证据,新服凌云21服L21,未取得自然创角到授予技能完整契约,HTTPS不安全WebSocket触发SecurityError；未创建新角色,BLOCKED,旧服L20已恢复且事件6任务0/1未进；保留自然开局初值和授予规则未知,docs/onboarding-evidence.md；docs/event5-equipment-evidence.md

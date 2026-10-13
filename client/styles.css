@@ -91,3 +91,13 @@ dd { margin: 0; overflow-wrap: anywhere; }
 #gear-panel dl { font-size: 14px; }
 #gear-detail, #gear-candidates-panel { border-top: 1px solid #b8a77c; margin-top: 18px; }
 .gear-candidate { padding: 14px; margin-block: 12px; display: grid; gap: 12px; border: 1px solid #b8a77c; background: #e9dfc6; font-size: 14px; }
+
+#open-breakthrough { margin-top: 18px; }
+#breakthrough-panel { margin-top: 18px; }
+#breakthrough-realm { text-align: center; }
+#breakthrough-panel dl { font-size: 14px; }
+#breakthrough-conditions { display: grid; gap: 12px; margin-top: 20px; }
+.breakthrough-condition { border: 1px solid #b8a77c; background: #e9dfc6; display: grid; grid-template-columns: 1fr auto; padding: 14px; gap: 12px; font-size: 14px; align-items: center; }
+#breakthrough-panel > button { width: 100%; margin-top: 12px; }
+#breakthrough-reward, #breakthrough-result { border: 1px solid #b8a77c; background: #e3e9df; padding: 16px; margin-top: 18px; }
+#breakthrough-reward h3, #breakthrough-result h3 { margin-top: 0; font-size: 18px; }
