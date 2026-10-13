@@ -81,7 +81,7 @@ npm.cmd start
 npm.cmd test
 ```
 
-测试使用系统临时目录和随机空闲端口，结束后清理，不覆盖日常存档。当前 9 项服务端接口测试通过：
+测试使用系统临时目录和随机空闲端口，结束后清理，不覆盖日常存档。基础与只读目录的 9 项服务端接口测试通过；加上下方装配专项共 16 项通过：
 
 1. 健康检查、参考选项、无角色 404、保存/读取、重复保存和姓名原样保留。
 2. 无效结构、未知选项、非法 JSON、错误媒体类型、超限正文、不支持方法均不改变已存状态。
@@ -146,4 +146,68 @@ npm.cmd test
 
 所有 `Text`、属性和说明片段仅供展示：`90%(27)` 不参与伤害计算，`7.3秒` 不作为运行时冷却，绿色加号数值不解释为升级结果，`0/1` 不解释为已知道具消耗。说明裁切和天赋行未核清部分用完整性标记保留未知，不补写推测文案。证据范围见 `martial-evidence.md`。
 
-当前无武学装配、卸下、升级、升星或技能施放接口。取证确认具体操作后再独立约定角色武学状态与存档方式；目录内容不得被当成可写玩家状态。
+目录本身仍只读，不得被当成可写玩家状态。独立装配检查点接口见下节；卸下、升级、升星及技能施放尚未实现。
+## 已观测装配前检查点与一键装配
+
+此功能是明确启用的开发测试检查点，输入依据为 `original-martial-task-before-equip.jpg`、`original-martial-list.jpg`，装配结果依据为 `original-martial-equipped.jpg` 和 `original-martial-task-after-equip.jpg`。它不代表普通新建角色默认拥有上勾拳，也不补齐取得该技能之前的剧情、资源或奖励。
+
+### 开启方式
+
+1. 用正常本地服务创建一个角色，确认 `CHARACTER_SAVE_FILE` 文件已存在，然后停止该服务。
+2. 为同一角色文件设置以下配置并重新启动；一次只允许一个服务进程使用这些存档。
+
+```powershell
+$env:CHARACTER_SAVE_FILE = 'D:\work\hd\game-zizaijianghu\.local\equip-qa-character.json'
+$env:MARTIAL_CHECKPOINT = 'observed-before-equip'
+npm.cmd start
+```
+
+角色文件须先由正常角色流程创建。启动时仅在武学文件尚不存在时初始化检查点；无角色则启动失败。GET 不初始化、不写档。已存在的武学文件永不因该配置自动重置；损坏文件启动失败且不覆盖。
+
+武学独立存档默认路径为 `${CHARACTER_SAVE_FILE}.martial.json`，例如上例的 `.local/equip-qa-character.json.martial.json`。可用 `MARTIAL_SAVE_FILE` 指定其他绝对路径，但不得与角色存档使用同一文件。角色文件结构仍为 `{name,appearanceId}`，不迁移、不改写、不丢弃既有数据。
+
+初始化一次后，即使移除 `MARTIAL_CHECKPOINT` 配置，后续启动仍读取已有武学存档。要测试全新的装配前状态，请使用另一组隔离存档文件并先创建对应角色，不删除或重置现有进度。
+
+### 接口与状态
+
+`GET /api/martial-state` 返回 200：
+
+```json
+{
+  "state": {
+    "kind": "local-martial-checkpoint",
+    "checkpoint": "observed-before-equip",
+    "owned": [{"id":"uppercut-reference","level":1}],
+    "slots": [
+      {"position":1,"skillId":null,"locked":false},
+      {"position":2,"skillId":null,"locked":false},
+      {"position":3,"skillId":null,"locked":false},
+      {"position":4,"skillId":null,"locked":true},
+      {"position":5,"skillId":null,"locked":true},
+      {"position":6,"skillId":null,"locked":true}
+    ],
+    "task":{"id":"equip-martial-reference","label":"装配武学","current":0,"target":1}
+  }
+}
+```
+
+`POST /api/martial-state/auto-equip` **不带正文**，成功返回同样的 `{state:...}` 结构，仅第 1 槽的 `skillId` 变为 `uppercut-reference`、任务 `current` 变为 1；其余槽位、唯一拥有技能及等级不变。不产生奖励，不改变姓名、外观或资源。
+
+重复 POST 在本地定义为幂等，返回同一已完成状态，不再次改写存档。这是自建接口性质，原版重复点击效果未据此宣称已验证。接口不接受指定槽位、换位、卸下、升级或战斗参数。
+
+| 响应 | 条件与客户端处理 |
+| --- | --- |
+| 404 `character_not_found` | 尚无本地角色 |
+| 404 `martial_checkpoint_not_initialized` | 有角色但未开启检查点；页面继续提供只读图鉴，不给角色添加武学 |
+| 409 `martial_checkpoint_character_mismatch` | 当前姓名/外观与检查点绑定身份不一致；展示冲突，不静默重置或迁移 |
+| 400 `empty_body_required` | 装配 POST 携带正文，包括 `{}` |
+| 405 `method_not_allowed` | GET 状态路径或 POST 操作路径使用了其他方法 |
+| 500 `local_operation_failed` | 写入失败，内存仍保持最后成功状态 |
+
+武学存档保存绑定角色身份和独立的 `equipped`、`taskComplete` 旗标。任务完成不从当前槽位是否有技能倒推；新增原版卸下证据表明任务仍为 1/1。本轮未实现卸下入口或卸下接口。
+
+### 装配专项验证
+
+`npm.cmd test` 当前总计 16/16 通过，其中装配相关 7 项覆盖：普通角色不自动建档；明确检查点到槽 1 与任务 1/1 的迁移及并发重复请求幂等；正文错误/磁盘失败不改状态及重试恢复；身份变化返回冲突且不改武学进度；真实进程重启恢复；缺角色/未知检查点/损坏存档不覆盖；独立任务旗标不随空槽消失。
+
+本地重启通过只证明本地持久化，不等于已证明原版装配重登行为。页面点击及原版视觉对照仍由独立 QA 另行验证。

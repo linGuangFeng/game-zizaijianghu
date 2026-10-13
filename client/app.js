@@ -1,5 +1,5 @@
 const byId = (id) => document.getElementById(id);
-const panels = ['appearance-step', 'name-step', 'saved-step', 'martial-list', 'martial-detail'];
+const panels = ['appearance-step', 'name-step', 'saved-step', 'martial-list', 'martial-detail', 'equipment-panel'];
 const genderLabels = {
   'male-reference-0002': '男',
   'female-reference-0003': '女',
@@ -14,7 +14,7 @@ function status(message, error = false) {
 }
 
 function showPanel(id) {
-  byId('portrait-area').hidden = id === 'martial-list' || id === 'martial-detail';
+  byId('portrait-area').hidden = id === 'martial-list' || id === 'martial-detail' || id === 'equipment-panel';
   for (const panel of panels) byId(panel).hidden = panel !== id;
 }
 
@@ -35,6 +35,7 @@ function showCharacter(character) {
   byId('saved-name').textContent = character.name;
   byId('saved-appearance').textContent = genderLabels[character.appearanceId];
   showPanel('saved-step');
+  readCheckpoint();
 }
 
 async function readCharacter() {
@@ -201,4 +202,110 @@ byId('back-martial-list').addEventListener('click', () => {
   showPanel('martial-list');
   byId('title').textContent = '武学图鉴';
   status('');
+});
+
+
+let equipping = false;
+const equippedSkillNames = { 'uppercut-reference': '上勾拳' };
+
+function displayCheckpoint(state) {
+
+  byId('equipment-slots').replaceChildren();
+  for (const slot of state.slots) {
+    const item = document.createElement('li');
+    item.className = slot.locked ? 'slot locked' : slot.skillId ? 'slot equipped' : 'slot';
+    const label = document.createElement('span');
+    label.textContent = slot.locked ? '锁定' : slot.skillId ? equippedSkillNames[slot.skillId] : '+';
+    const number = document.createElement('small');
+    number.textContent = String(slot.position);
+    item.setAttribute('aria-label', `槽位 ${slot.position}：${slot.locked ? '锁定' : slot.skillId ? equippedSkillNames[slot.skillId] : '空'}`);
+    item.append(label, number);
+    byId('equipment-slots').append(item);
+  }
+  byId('equipment-owned').replaceChildren();
+  for (const skill of state.owned) {
+    const card = document.createElement('div');
+    card.className = 'owned-card';
+    const name = document.createElement('strong');
+    name.textContent = equippedSkillNames[skill.id];
+    const level = document.createElement('span');
+    level.textContent = `Lv.${skill.level}`;
+    card.append(name, level);
+    if (state.slots.some((slot) => slot.skillId === skill.id)) {
+      const badge = document.createElement('span');
+      badge.className = 'equipped-badge';
+      badge.textContent = '已装配';
+      card.append(badge);
+    }
+    byId('equipment-owned').append(card);
+  }
+  const taskText = `${state.task.label} ${state.task.current}/${state.task.target}`;
+  byId('equipment-task').textContent = taskText;
+  byId('checkpoint-message').textContent = taskText;
+}
+
+async function readCheckpoint() {
+  byId('retry-checkpoint').hidden = true;
+  byId('retry-equipment').hidden = true;
+  byId('auto-equip').disabled = true;
+  try {
+    const response = await fetch('/api/martial-state');
+    if (response.status === 404) {
+
+      byId('open-equipment').hidden = true;
+      byId('checkpoint-message').textContent = '';
+      if (!byId('equipment-panel').hidden) {
+        showPanel('saved-step');
+        byId('title').textContent = '我的角色';
+        status('');
+      }
+      return;
+    }
+    if (!response.ok) throw new Error(response.status === 409 ? 'mismatch' : 'read_failed');
+    displayCheckpoint((await response.json()).state);
+    byId('open-equipment').hidden = false;
+    byId('auto-equip').disabled = false;
+    if (!byId('equipment-panel').hidden) status('');
+  } catch (error) {
+    const message = error.message === 'mismatch' ? '武学记录与当前角色不匹配。' : '武学读取失败，请重试。';
+    byId('checkpoint-message').textContent = message;
+    byId('retry-checkpoint').hidden = false;
+    if (!byId('equipment-panel').hidden) {
+      status(message, true);
+      byId('retry-equipment').hidden = false;
+    }
+  }
+}
+
+byId('open-equipment').addEventListener('click', () => {
+  showPanel('equipment-panel');
+  byId('title').textContent = '武学';
+  status('正在读取武学……');
+  readCheckpoint();
+});
+byId('retry-checkpoint').addEventListener('click', readCheckpoint);
+byId('retry-equipment').addEventListener('click', readCheckpoint);
+byId('back-equipment').addEventListener('click', () => {
+  showPanel('saved-step');
+  byId('title').textContent = '我的角色';
+  status('');
+});
+byId('auto-equip').addEventListener('click', async () => {
+  if (equipping) return;
+  equipping = true;
+  byId('auto-equip').disabled = true;
+  byId('back-equipment').disabled = true;
+  status('正在装配……');
+  try {
+    const response = await fetch('/api/martial-state/auto-equip', { method: 'POST' });
+    if (!response.ok) throw new Error('equip_failed');
+    displayCheckpoint((await response.json()).state);
+    status('装配成功');
+  } catch {
+    status('装配失败，请重试。', true);
+  } finally {
+    equipping = false;
+    byId('auto-equip').disabled = false;
+    byId('back-equipment').disabled = false;
+  }
 });

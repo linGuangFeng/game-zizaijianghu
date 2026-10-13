@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { martialCatalog } from './martial-catalog.js';
+import { createMartialStore, MartialStateError } from './martial-store.js';
 import { readFile, realpath, stat } from 'node:fs/promises';
 import { extname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { appearanceOptions, createCharacterStore, isCharacter } from './store.js';
@@ -43,8 +44,10 @@ async function serveStatic(request, response, pathname, clientDirectory) {
   }
 }
 
-export async function createApp({ saveFile, clientDirectory }) {
+export async function createApp({ saveFile, clientDirectory, martialSaveFile = `${saveFile}.martial.json`, martialCheckpoint }) {
+  if (resolve(martialSaveFile) === resolve(saveFile)) throw new Error('Martial and character saves must use separate files.');
   const store = await createCharacterStore(saveFile);
+  const martialStore = await createMartialStore({ file: martialSaveFile, checkpoint: martialCheckpoint, character: store.get() });
   const clientRoot = resolve(clientDirectory);
   return createServer(async (request, response) => {
     try {
@@ -57,6 +60,18 @@ export async function createApp({ saveFile, clientDirectory }) {
         return request.method === 'GET'
           ? json(response, 200, martialCatalog)
           : json(response, 405, { error: 'method_not_allowed' });
+      }
+      if (pathname === '/api/martial-state') {
+        return request.method === 'GET'
+          ? json(response, 200, { state: martialStore.get(store.get()) })
+          : json(response, 405, { error: 'method_not_allowed' });
+      }
+      if (pathname === '/api/martial-state/auto-equip') {
+        if (request.method !== 'POST') return json(response, 405, { error: 'method_not_allowed' });
+        let bytes = 0;
+        for await (const chunk of request) bytes += chunk.length;
+        if (bytes !== 0) return json(response, 400, { error: 'empty_body_required' });
+        return json(response, 200, { state: await martialStore.equip(() => store.get()) });
       }
       if (pathname === '/api/character') {
         if (request.method === 'GET') {
@@ -87,7 +102,8 @@ export async function createApp({ saveFile, clientDirectory }) {
       }
       if (pathname.startsWith('/api/')) return json(response, 404, { error: 'not_found' });
       return await serveStatic(request, response, pathname, clientRoot);
-    } catch {
+    } catch (error) {
+      if (error instanceof MartialStateError) return json(response, error.statusCode, { error: error.errorCode });
       if (!response.headersSent) json(response, 500, { error: 'local_operation_failed' });
       else response.destroy();
     }

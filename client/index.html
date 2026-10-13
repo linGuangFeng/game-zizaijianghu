@@ -27,7 +27,17 @@
     </form>
     <section id="saved-step" hidden aria-labelledby="saved-title">
       <h2 id="saved-title">我的角色</h2>
-      <dl><div><dt>角色名称</dt><dd id="saved-name"></dd></div><div><dt>性别</dt><dd id="saved-appearance"></dd></div></dl><button id="open-martial" class="primary" type="button">武学图鉴</button>
+      <dl><div><dt>角色名称</dt><dd id="saved-name"></dd></div><div><dt>性别</dt><dd id="saved-appearance"></dd></div></dl><p id="checkpoint-message" class="status" role="status"></p><button id="open-equipment" class="primary" type="button" hidden>武学</button><button id="retry-checkpoint" class="secondary" type="button" hidden>重新读取武学</button><button id="open-martial" class="primary" type="button">武学图鉴</button>
+    </section>
+    <section id="equipment-panel" hidden aria-labelledby="equipment-title">
+      <h2 id="equipment-title">武学</h2>
+      <ol id="equipment-slots" class="equipment-slots" aria-label="武学槽位"></ol>
+      <h3>已拥有</h3>
+      <div id="equipment-owned" class="equipment-owned"></div>
+      <p id="equipment-task" class="equipment-task" aria-live="polite"></p>
+      <button id="auto-equip" class="primary" type="button">一键装配</button>
+      <button id="retry-equipment" class="secondary" type="button" hidden>重新读取</button>
+      <button id="back-equipment" class="secondary" type="button">返回角色</button>
     </section>
     <section id="martial-list" hidden aria-labelledby="martial-list-title">
       <h2 id="martial-list-title">武学图鉴</h2>
