@@ -48,7 +48,21 @@
     </section>
     <section id="saved-step" hidden aria-labelledby="saved-title">
       <h2 id="saved-title">我的角色</h2>
-      <dl><div><dt>角色名称</dt><dd id="saved-name"></dd></div><div><dt>性别</dt><dd id="saved-appearance"></dd></div></dl><button id="open-breakthrough" class="primary" type="button" hidden>境界突破</button><p id="breakthrough-entry-message" class="status" role="status"></p><button id="retry-breakthrough-entry" class="secondary" type="button" hidden>重新读取突破</button><button id="open-gear" class="primary" type="button" hidden>装备</button><p id="gear-entry-message" class="status" role="status"></p><button id="retry-gear-entry" class="secondary" type="button" hidden>重新读取装备</button><button id="open-realm" class="primary" type="button" hidden>境界</button><p id="realm-entry-message" class="status" role="status"></p><button id="retry-realm-entry" class="secondary" type="button" hidden>重新读取境界</button><button id="open-martial" class="primary" type="button">武学图鉴</button><button id="back-jianghu" class="secondary" type="button">返回江湖</button>
+      <dl><div><dt>角色名称</dt><dd id="saved-name"></dd></div><div><dt>性别</dt><dd id="saved-appearance"></dd></div></dl><button id="open-test-commerce" class="primary" type="button" hidden>本地测试充值</button><p id="commerce-entry-message" class="status" role="status"></p><button id="retry-commerce-entry" class="secondary" type="button" hidden>重新读取测试充值</button><button id="open-breakthrough" class="primary" type="button" hidden>境界突破</button><p id="breakthrough-entry-message" class="status" role="status"></p><button id="retry-breakthrough-entry" class="secondary" type="button" hidden>重新读取突破</button><button id="open-gear" class="primary" type="button" hidden>装备</button><p id="gear-entry-message" class="status" role="status"></p><button id="retry-gear-entry" class="secondary" type="button" hidden>重新读取装备</button><button id="open-realm" class="primary" type="button" hidden>境界</button><p id="realm-entry-message" class="status" role="status"></p><button id="retry-realm-entry" class="secondary" type="button" hidden>重新读取境界</button><button id="open-martial" class="primary" type="button">武学图鉴</button><button id="back-jianghu" class="secondary" type="button">返回江湖</button>
+    </section>
+    <section id="commerce-panel" hidden aria-labelledby="commerce-title">
+      <h2 id="commerce-title">本地测试充值</h2>
+      <p class="test-payment-note">测试环境支付直接成功，不实际扣款。</p>
+      <h3 id="commerce-product-name"></h3><p id="commerce-price"></p>
+      <h3>首日奖励</h3><ul id="commerce-rewards"></ul>
+      <p class="reference-note">仅记录本次领取，尚未接入可用武学或可消费钱包。后两日领取及复购暂未开放。</p>
+      <p id="commerce-order-status"></p>
+      <button id="commerce-purchase" class="primary" type="button" disabled>测试购买 ¥6</button>
+      <button id="commerce-claim" class="primary" type="button" hidden disabled>领取首日奖励</button>
+      <section id="commerce-grants-section" hidden aria-labelledby="commerce-grants-title"><h3 id="commerce-grants-title">本次领取记录</h3><ul id="commerce-grants"></ul></section>
+      <p id="commerce-message" class="status" role="status" aria-live="polite"></p>
+      <button id="retry-commerce" class="secondary" type="button" hidden>重新读取订单</button>
+      <button id="back-commerce" class="secondary" type="button">返回角色</button>
     </section>
     <section id="breakthrough-panel" hidden aria-labelledby="breakthrough-realm">
       <div class="realm-seat" aria-hidden="true">修炼</div>

@@ -626,3 +626,120 @@ skillId只允许上勾拳，expectedRevision为当前非负安全整数版本。
 主会话内部浏览器已通过旧档未知材料禁用升级；人工隔离Lv1材料2样本断服失败锁定、新进程重读；另一页卸下使revision1后，旧详情revision0升级冲突且只重读不扣；用户明确再次点击后升级至Lv2/材料1/revision2、属性40/20/2000；另一页一键装配至revision3仍保留成长，刷新一致。页面验收归主会话，不以HTTP测试替代。
 
 原版材料提示已明确名称上勾拳、来源藏经阁，但本地没有材料获取、抽取、赠送或购买接口，也不因旧图0/1给生产存档写0。本轮不含Lv3、其他武学升级、升星、完整属性成长或自然任务授予。
+
+## 本地测试购买与首日领取
+
+用户授权测试充值直接成功。本节仅模拟支付，不连接原站支付、支付SDK或产生真实扣款。已有普通本地角色即可使用资料页“本地测试充值”，无需游戏检查点；该测试入口不表示已复刻原版事件8解锁。价格和首日展示权益来自原版取证，购买成功与分步领取的行为是本地测试合同，不描述尚未验证的原版付款/领取过程。
+
+### 读取商品与订单
+
+`GET /api/test-commerce` 返回200 `{state:...}`。无订单时仅投影下列状态，不建档或补余额：
+
+```json
+{
+  "state": {
+    "kind":"local-test-commerce",
+    "revision":0,
+    "product":{
+      "id":"dangjian-three-day-reference","name":"荡剑式三天商品",
+      "price":{"currency":"CNY","minorUnits":600},
+      "day1Rewards":[
+        {"id":"dangjian-skill-reference","name":"荡剑式","quantity":1},
+        {"id":"baodian-token-reference","name":"宝典令","quantity":40},
+        {"id":"yuanbao-reference","name":"元宝","quantity":60}
+      ]
+    },
+    "order":null,"grants":[],"canPurchase":true,"canClaimDay1":false
+  }
+}
+```
+
+minorUnits为人民币分，600表示¥6。grants只表示本次首日领取记录；接口没有钱包总余额、可消费余额或已拥有武学字段。原账号tooltip的元宝0、宝典令19不能作为本地角色初始余额。
+
+### 测试购买
+
+`POST /api/test-commerce/purchase` 要求JSON媒体类型，正文严格两个字段：
+
+```json
+{"productId":"dangjian-three-day-reference","requestId":"客户端本次请求标识"}
+```
+
+只支持此productId；requestId为长度1～128的字符串。首次成功返回200完整 `{state:...}`，revision=1、canPurchase=false、canClaimDay1=true、grants仍为空，order为：
+
+```json
+{
+  "id":"服务端生成的UUID",
+  "productId":"dangjian-three-day-reference",
+  "status":"paid",
+  "paymentMode":"local-test",
+  "purchaseRequestId":"客户端本次请求标识",
+  "day1Claimed":false
+}
+```
+
+paid表示本地测试成功，必须落盘成功才响应；没有真实支付会话。该角色已有此订单时，无论原requestId或新的requestId，都返回原订单及当前完整state，不再写文件、增加版本或生成第二单。复购尚未实现，这是本地范围限制，不声称原版限购一次。请求结果不明时先GET恢复订单；页面刷新也通过服务器唯一订单防重。
+
+### 首日领取
+
+`POST /api/test-commerce/claim-day1` 同样要求JSON，正文严格为：
+
+```json
+{"orderId":"读取到的订单UUID","expectedRevision":1}
+```
+
+orderId为非空字符串，expectedRevision为非负安全整数。有效首次领取返回200完整state，revision=2、order.day1Claimed=true、canClaimDay1=false；三条grants一起写入。每条格式如下，reward按商品首日三项顺序分别取值：
+
+```json
+{
+  "id":"订单UUID:day1:dangjian-skill-reference",
+  "orderId":"订单UUID",
+  "day":1,
+  "reward":{"id":"dangjian-skill-reference","name":"荡剑式","quantity":1}
+}
+```
+
+另两条id尾部分别为baodian-token-reference、yuanbao-reference。这些记录尚未接入可用武学、装备槽、抽取票券或可消费总钱包；不会改写武学/境界/装备文件，也不把境界宝典令receipts累加为总余额。购买不自动领取，首日之外无领取动作，后两日条件与权益未实现。
+
+### 主文件兼容与事务
+
+使用既有CHARACTER_SAVE_FILE，不新增订单sidecar或检查点。旧纯角色 `{name,appearanceId}` 正常读取，GET不迁移；首次测试购买才以一次原子写变为：
+
+```json
+{
+  "schemaVersion":1,
+  "character":{"name":"本地角色名","appearanceId":"male-reference-0002"},
+  "commerce":{
+    "boundCharacter":{"name":"本地角色名","appearanceId":"male-reference-0002"},
+    "revision":1,
+    "order":{"id":"UUID","productId":"dangjian-three-day-reference","status":"paid","paymentMode":"local-test","purchaseRequestId":"请求标识","day1Claimed":false},
+    "grants":[]
+  }
+}
+```
+
+`/api/character` 的请求与响应仍是原角色shape，GET返回 `{character:{name,appearanceId}}`。后续PUT保留commerce；更改姓名或外观不会删除订单或默默改绑，测试购买/领取/读取会明确返回绑定冲突。恢复原身份可继续读取原订单。损坏或无效订单/权益数据拒绝启动，不覆盖旧文件。
+
+角色PUT、购买及领取共用同一store串行队列。写入通过同目录临时文件和原子替换，成功后才换内存；失败不会出现已付订单未落盘、部分权益发放或已领取标记单独生效。
+
+领取依次检查角色绑定、订单存在、订单ID、版本，再判断是否已领取。当前版本重复已领取请求返回200，不写文件或增版本；旧版本即使已领取仍409。并发首次领取只有一个提交，另一个版本冲突；冲突或响应不明时只重读，不自动再领取。以上为本地可靠性约定，不是原版网络协议。
+
+| 状态 / error | 含义 |
+| --- | --- |
+| 404 character_not_found | 无本地角色，不能读取或购买 |
+| 409 commerce_character_mismatch | 当前角色与订单绑定不符，保留旧权益 |
+| 409 commerce_order_required | 领取时尚无订单 |
+| 409 commerce_order_mismatch | 请求orderId不是该角色现存订单 |
+| 409 commerce_revision_conflict | 领取版本不是当前版本 |
+| 400 invalid_commerce_purchase | 商品ID、requestId或正文结构不符 |
+| 400 invalid_commerce_claim | orderId、版本或正文结构不符 |
+| 400 invalid_json | JSON无法解析 |
+| 415 json_required | 未声明JSON媒体类型 |
+| 413 body_too_large | 正文超过16 KiB |
+| 405 method_not_allowed | GET状态或POST动作方法不符 |
+| 500 local_operation_failed | 本地持久化等操作失败，不代表真实支付结果 |
+
+### 验证范围
+
+本轮全部开发回归75/75通过，其中测试购买新增7项；独立真实HTTP QA 10/10通过，见 [本地测试购买独立QA](test-commerce-qa.md)。覆盖旧角色GET零迁移、购买/领取分别失败原子、并发防重、角色PUT保留权益、绑定冲突、其他存档隔离、真实新进程恢复与非法输入。
+
+主会话已报告内部浏览器本轮范围通过，页面路径由QA补录到同一报告；本段不把独立HTTP代理写成浏览器执行者。当前完成的是普通角色可进入的本地测试订单→首日权益记录闭环，不是原版真实支付验收，也不是可消费资源、荡剑式玩法、后两日领取或正常主线解锁完成。

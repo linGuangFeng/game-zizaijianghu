@@ -1,5 +1,5 @@
 const byId = (id) => document.getElementById(id);
-const panels = ['appearance-step', 'name-step', 'jianghu-panel', 'saved-step', 'martial-list', 'martial-detail', 'equipment-panel', 'realm-panel', 'gear-panel', 'breakthrough-panel', 'player-martial-detail', 'ninth-training-panel'];
+const panels = ['appearance-step', 'name-step', 'jianghu-panel', 'saved-step', 'martial-list', 'martial-detail', 'equipment-panel', 'realm-panel', 'gear-panel', 'breakthrough-panel', 'player-martial-detail', 'ninth-training-panel', 'commerce-panel'];
 const genderLabels = {
   'male-reference-0002': '男',
   'female-reference-0003': '女',
@@ -15,7 +15,7 @@ function status(message, error = false) {
 
 function showPanel(id) {
   document.querySelector('.game-shell').classList.toggle('is-jianghu', id === 'jianghu-panel');
-  byId('portrait-area').hidden = id === 'martial-list' || id === 'martial-detail' || id === 'equipment-panel' || id === 'jianghu-panel' || id === 'realm-panel' || id === 'gear-panel' || id === 'breakthrough-panel' || id === 'player-martial-detail' || id === 'ninth-training-panel';
+  byId('portrait-area').hidden = id === 'martial-list' || id === 'martial-detail' || id === 'equipment-panel' || id === 'jianghu-panel' || id === 'realm-panel' || id === 'gear-panel' || id === 'breakthrough-panel' || id === 'player-martial-detail' || id === 'ninth-training-panel' || id === 'commerce-panel';
   for (const panel of panels) byId(panel).hidden = panel !== id;
 }
 
@@ -42,6 +42,7 @@ function showCharacter(character) {
   readRealm();
   readGear();
   readBreakthrough();
+  readCommerce();
 }
 
 async function readCharacter() {
@@ -1050,3 +1051,124 @@ byId('back-ninth').addEventListener('click', () => {
   status('');
   readBreakthrough();
 });
+
+let commerceState = null;
+let commerceRequest = 0;
+let commerceBusy = false;
+let commerceReady = false;
+let purchaseRequestId = null;
+
+function commerceControls() {
+  byId('commerce-purchase').disabled = commerceBusy || !commerceReady || !commerceState?.canPurchase;
+  byId('commerce-claim').disabled = commerceBusy || !commerceReady || !commerceState?.canClaimDay1;
+  byId('back-commerce').disabled = commerceBusy;
+  byId('retry-commerce').disabled = commerceBusy;
+  byId('retry-commerce-entry').disabled = commerceBusy;
+}
+
+function displayCommerce(state) {
+  commerceState = state;
+  byId('commerce-product-name').textContent = state.product.name;
+  const price = new Intl.NumberFormat('zh-CN', { style: 'currency', currency: state.product.price.currency }).format(state.product.price.minorUnits / 100);
+  byId('commerce-price').textContent = price;
+  byId('commerce-purchase').textContent = `测试购买 ${price}`;
+  byId('commerce-purchase').hidden = !state.canPurchase;
+  byId('commerce-claim').hidden = !state.order;
+  byId('commerce-claim').textContent = state.order?.day1Claimed ? '首日奖励已领取' : '领取首日奖励';
+  byId('commerce-order-status').textContent = state.order ? '本地测试订单：支付成功（未实际扣款）' : '尚未购买';
+  byId('commerce-rewards').replaceChildren();
+  for (const reward of state.product.day1Rewards) {
+    const item = document.createElement('li');
+    item.textContent = `${reward.name} × ${reward.quantity}`;
+    byId('commerce-rewards').append(item);
+  }
+  byId('commerce-grants').replaceChildren();
+  for (const grant of state.grants) {
+    const item = document.createElement('li');
+    item.textContent = `首日 · ${grant.reward.name} × ${grant.reward.quantity}`;
+    byId('commerce-grants').append(item);
+  }
+  byId('commerce-grants-section').hidden = state.grants.length === 0;
+}
+
+async function readCommerce() {
+  const request = ++commerceRequest;
+  commerceReady = false;
+  commerceControls();
+  byId('retry-commerce').hidden = true;
+  byId('retry-commerce-entry').hidden = true;
+  try {
+    const response = await fetch('/api/test-commerce');
+    if (request !== commerceRequest) return;
+    if (response.status === 404) {
+      commerceState = null;
+      byId('open-test-commerce').hidden = true;
+      byId('commerce-entry-message').textContent = '';
+      byId('commerce-grants').replaceChildren();
+      if (!byId('commerce-panel').hidden) showRealmProfile();
+      return;
+    }
+    if (!response.ok) throw new Error('read_failed');
+    const result = await response.json();
+    if (request !== commerceRequest) return;
+    displayCommerce(result.state);
+    commerceReady = true;
+    byId('open-test-commerce').hidden = false;
+    byId('commerce-entry-message').textContent = '';
+    byId('commerce-message').textContent = '';
+    commerceControls();
+  } catch {
+    if (request !== commerceRequest) return;
+    byId('commerce-entry-message').textContent = '测试充值读取失败，请重试。';
+    byId('commerce-message').textContent = '订单读取失败，请重试。';
+    byId('retry-commerce').hidden = false;
+    byId('retry-commerce-entry').hidden = false;
+  }
+}
+
+async function writeCommerce(purchase) {
+  if (commerceBusy || !commerceReady) return;
+  commerceBusy = true;
+  ++commerceRequest;
+  commerceControls();
+  byId('commerce-message').textContent = purchase ? '正在完成测试支付……' : '正在领取首日奖励……';
+  try {
+    if (purchase && purchaseRequestId === null) purchaseRequestId = crypto.randomUUID();
+    const response = await fetch(purchase ? '/api/test-commerce/purchase' : '/api/test-commerce/claim-day1', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(purchase ? { productId: commerceState.product.id, requestId: purchaseRequestId } : { orderId: commerceState.order.id, expectedRevision: commerceState.revision }),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      if (result.error === 'commerce_revision_conflict') {
+        await readCommerce();
+        if (commerceReady) byId('commerce-message').textContent = '订单记录已更新，请核对领取状态。';
+        return;
+      }
+      throw new Error('write_failed');
+    }
+    displayCommerce(result.state);
+    byId('commerce-message').textContent = purchase ? '测试支付成功，未实际扣款。' : '首日奖励已记录。';
+  } catch {
+    commerceReady = false;
+    byId('commerce-message').textContent = '操作结果暂未确认，请重新读取订单后重试。';
+    byId('retry-commerce').hidden = false;
+  } finally {
+    commerceBusy = false;
+    commerceControls();
+  }
+}
+
+byId('open-test-commerce').addEventListener('click', () => {
+  showPanel('commerce-panel');
+  byId('title').textContent = '本地测试充值';
+  status('');
+  byId('commerce-message').textContent = '正在读取订单……';
+  readCommerce();
+});
+byId('commerce-purchase').addEventListener('click', () => writeCommerce(true));
+byId('commerce-claim').addEventListener('click', () => writeCommerce(false));
+byId('retry-commerce').addEventListener('click', readCommerce);
+byId('retry-commerce-entry').addEventListener('click', readCommerce);
+byId('back-commerce').addEventListener('click', showRealmProfile);

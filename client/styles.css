@@ -132,3 +132,12 @@ dd { margin: 0; overflow-wrap: anywhere; }
 #ninth-training-panel > button { width: 100%; margin-top: 12px; }
 #ninth-resource, #ninth-progress { text-align: center; }
 #ninth-attributes { font-size: 14px; }
+
+#open-test-commerce { margin-top: 18px; }
+#commerce-panel { margin-top: 24px; }
+#commerce-panel > button { width: 100%; margin-top: 12px; }
+.test-payment-note { padding: 14px; border: 1px solid #9b8254; background: #eee4c9; color: #514126; line-height: 1.6; }
+#commerce-price { font-size: 26px; color: #7d5c2e; }
+#commerce-rewards, #commerce-grants { padding-left: 22px; line-height: 1.9; }
+#commerce-grants-section { margin-top: 18px; padding: 14px; background: #e3e9df; }
+#commerce-grants-section h3 { margin-top: 0; }

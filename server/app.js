@@ -5,7 +5,7 @@ import { martialCatalog } from './martial-catalog.js';
 import { createMartialStore, MartialStateError } from './martial-store.js';
 import { readFile, realpath, stat } from 'node:fs/promises';
 import { extname, isAbsolute, relative, resolve, sep } from 'node:path';
-import { appearanceOptions, createCharacterStore, isCharacter } from './store.js';
+import { appearanceOptions, createCharacterStore, isCharacter, CommerceStateError, testProduct } from './store.js';
 
 const mediaTypes = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
@@ -193,6 +193,23 @@ export async function createApp({ saveFile, clientDirectory, martialSaveFile = `
           : await gearStore.equip(body.itemId, body.expectedRevision, () => store.get());
         return json(response, 200, { state });
       }
+      if (pathname === '/api/test-commerce') {
+        return request.method === 'GET'
+          ? json(response, 200, { state: store.getCommerce() })
+          : json(response, 405, { error: 'method_not_allowed' });
+      }
+      if (pathname === '/api/test-commerce/purchase' || pathname === '/api/test-commerce/claim-day1') {
+        if (request.method !== 'POST') return json(response, 405, { error: 'method_not_allowed' });
+        const body = await readJson(request);
+        const purchase = pathname.endsWith('/purchase');
+        const valid = body !== null && typeof body === 'object' && !Array.isArray(body) && Object.keys(body).length === 2
+          && (purchase
+            ? body.productId === testProduct.id && typeof body.requestId === 'string' && body.requestId.length >= 1 && body.requestId.length <= 128
+            : typeof body.orderId === 'string' && body.orderId.length > 0 && Number.isSafeInteger(body.expectedRevision) && body.expectedRevision >= 0);
+        if (!valid) return json(response, 400, { error: purchase ? 'invalid_commerce_purchase' : 'invalid_commerce_claim' });
+        const state = purchase ? await store.purchase(body.requestId) : await store.claimDay1(body.orderId, body.expectedRevision);
+        return json(response, 200, { state });
+      }
       if (pathname === '/api/character') {
         if (request.method === 'GET') {
           const character = store.get();
@@ -210,7 +227,7 @@ export async function createApp({ saveFile, clientDirectory, martialSaveFile = `
       if (pathname.startsWith('/api/')) return json(response, 404, { error: 'not_found' });
       return await serveStatic(request, response, pathname, clientRoot);
     } catch (error) {
-      if (error instanceof MartialStateError || error instanceof RealmStateError || error instanceof GearStateError || error instanceof RequestBodyError) return json(response, error.statusCode, { error: error.errorCode });
+      if (error instanceof MartialStateError || error instanceof RealmStateError || error instanceof GearStateError || error instanceof CommerceStateError || error instanceof RequestBodyError) return json(response, error.statusCode, { error: error.errorCode });
       if (!response.headersSent) json(response, 500, { error: 'local_operation_failed' });
       else response.destroy();
     }
