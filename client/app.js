@@ -221,16 +221,19 @@ let martialGrowthReady = false;
 const equippedSkillNames = {
   'uppercut-reference': '上勾拳',
   'ruwu-sword-reference': '入悟剑法',
+  'blue-sword-reference': '蓝色剑诀（名称待核）',
 };
 
 function displayCheckpoint(state) {
   equipmentState = state;
-  const canEdit = state.checkpoint === 'observed-before-equip' || state.checkpoint === 'observed-event1-before-equip';
+  const isThreeSkillMode = state.loadoutMode === 'observed-three-reference';
+  const canEdit = isThreeSkillMode || state.checkpoint === 'observed-before-equip' || state.checkpoint === 'observed-event1-before-equip';
   if (!canEdit) editingEquipment = false;
   byId('edit-equipment').hidden = !canEdit;
   byId('edit-equipment').textContent = editingEquipment ? '退出编辑' : '编辑';
   byId('edit-equipment').setAttribute('aria-pressed', String(editingEquipment));
   byId('equipment-edit-hint').hidden = !editingEquipment;
+  byId('equipment-edit-hint').textContent = isThreeSkillMode ? '可卸下中槽入悟剑法，点击未装配的入悟剑法可补回' : '点击槽位右上角可卸下武学';
 
   byId('equipment-slots').replaceChildren();
   for (const slot of state.slots) {
@@ -242,7 +245,8 @@ function displayCheckpoint(state) {
     number.textContent = String(slot.position);
     item.setAttribute('aria-label', `槽位 ${slot.position}：${slot.locked ? '锁定' : slot.skillId ? equippedSkillNames[slot.skillId] : '空'}`);
     item.append(label, number);
-    if (editingEquipment && slot.skillId && (slot.position === 1 || (state.checkpoint === 'observed-event1-before-equip' && slot.position === 2))) {
+    const canRemove = isThreeSkillMode ? state.actions.unequipPositions.includes(slot.position) : slot.position === 1 || (state.checkpoint === 'observed-event1-before-equip' && slot.position === 2);
+    if (editingEquipment && slot.skillId && canRemove) {
       const remove = document.createElement('button');
       remove.type = 'button';
       remove.className = 'unequip-button';
@@ -256,8 +260,8 @@ function displayCheckpoint(state) {
   }
   byId('equipment-owned').replaceChildren();
   for (const skill of state.owned) {
-    const canUseCard = editingEquipment && state.checkpoint === 'observed-event1-before-equip';
     const equippedSlot = state.slots.find((slot) => slot.skillId === skill.id);
+    const canUseCard = editingEquipment && (isThreeSkillMode ? equippedSlot ? state.actions.unequipPositions.includes(equippedSlot.position) : state.actions.equipSkillIds.includes(skill.id) : state.checkpoint === 'observed-event1-before-equip');
     const canOpenGrowth = !editingEquipment && skill.id === 'uppercut-reference' && state.growth?.uppercut;
     const card = document.createElement(canUseCard || canOpenGrowth ? 'button' : 'div');
     card.className = 'owned-card';
@@ -397,9 +401,9 @@ async function unequipMartial(position) {
   for (const button of document.querySelectorAll('#equipment-slots button, #equipment-owned button')) button.disabled = true;
   status('正在卸下……');
   try {
-    const isTwoSkillCheckpoint = equipmentState.checkpoint === 'observed-event1-before-equip';
-    const response = await fetch(isTwoSkillCheckpoint ? '/api/martial-state/unequip-slot' : '/api/martial-state/unequip',
-      isTwoSkillCheckpoint ? {
+    const usesSlotPosition = equipmentState.loadoutMode === 'observed-three-reference' || equipmentState.checkpoint === 'observed-event1-before-equip';
+    const response = await fetch(usesSlotPosition ? '/api/martial-state/unequip-slot' : '/api/martial-state/unequip',
+      usesSlotPosition ? {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ position }),

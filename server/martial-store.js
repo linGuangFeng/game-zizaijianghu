@@ -5,6 +5,17 @@ import { isCharacter } from './store.js';
 
 const uppercut = 'uppercut-reference';
 const sword = 'ruwu-sword-reference';
+const blue = 'blue-sword-reference';
+function validThreeSave(data) {
+  return data.twoSlots === undefined && data.twoEquipped === undefined && data.ownedOrder === undefined
+    && Array.isArray(data.threeSlots) && data.threeSlots.length === 3
+    && data.threeSlots[0] === blue && [sword, null].includes(data.threeSlots[1]) && data.threeSlots[2] === uppercut;
+}
+function observedLoadout(data) {
+  if (data.threeSlots !== undefined) return { slots: data.threeSlots,
+    ownedOrder: data.threeSlots[1] === null ? [blue, uppercut, sword] : [blue, sword, uppercut] };
+  return twoSkillState(data);
+}
 function validGrowth(data) {
   if (data.revision !== undefined && (!Number.isSafeInteger(data.revision) || data.revision < 0)) return false;
   const progress = data.uppercutProgress;
@@ -60,8 +71,8 @@ export async function createMartialStore({ file, checkpoint, character, storage 
   try {
     saved = storage ? storage.load() : JSON.parse(await readFile(file, 'utf8'));
     const validState = saved?.checkpoint === 'observed-before-equip'
-      ? typeof saved.equipped === 'boolean' && typeof saved.taskComplete === 'boolean'
-      : saved?.checkpoint === 'observed-event1-before-equip' && validTwoSave(saved);
+      ? saved.threeSlots === undefined && typeof saved.equipped === 'boolean' && typeof saved.taskComplete === 'boolean'
+      : saved?.checkpoint === 'observed-event1-before-equip' && (saved.threeSlots !== undefined ? validThreeSave(saved) : validTwoSave(saved));
     if (!validState || !isCharacter(saved.character) || !validGrowth(saved)) {
       throw new Error('Invalid local martial save.');
     }
@@ -97,10 +108,11 @@ export async function createMartialStore({ file, checkpoint, character, storage 
       throw new MartialStateError(409, 'martial_checkpoint_character_mismatch');
     }
     if (saved.checkpoint === 'observed-event1-before-equip') {
-      const { slots: assigned, ownedOrder: ownedIds } = twoSkillState(saved);
+      const { slots: assigned, ownedOrder: ownedIds } = observedLoadout(saved);
       return {
         kind: 'local-martial-checkpoint',
         checkpoint: saved.checkpoint,
+        ...(saved.threeSlots !== undefined ? { loadoutMode: 'observed-three-reference', actions: { unequipPositions: [2], equipSkillIds: [sword] } } : {}),
         revision: saved.revision ?? 0, growth: growthFor(saved),
         owned: ownedIds.map((id) => ({ id, level: id === uppercut ? (saved.uppercutProgress?.level ?? 1) : 1 })),
         slots: [1, 2, 3, 4, 5, 6].map((position) => ({
@@ -120,6 +132,9 @@ export async function createMartialStore({ file, checkpoint, character, storage 
       task: { id: 'equip-martial-reference', label: '装配武学', current: saved.taskComplete ? 1 : 0, target: 1 },
     };
   }
+  async function persistMiddle(skillId) {
+    await persist({ ...saved, threeSlots: [blue, skillId, uppercut], revision: (saved.revision ?? 0) + 1 });
+  }
   async function persistTwo(twoSlots, ownedOrder) {
     const { twoEquipped, ...retained } = saved;
     await persist({ ...retained, twoSlots, ownedOrder, revision: (saved.revision ?? 0) + 1 });
@@ -137,6 +152,10 @@ export async function createMartialStore({ file, checkpoint, character, storage 
       const state = stateFor(character);
       if (saved.checkpoint === 'observed-event1-before-equip') {
         if (!equipped) throw new MartialStateError(409, 'martial_action_not_observed');
+        if (saved.threeSlots !== undefined) {
+          if (saved.threeSlots[1] === sword) return state;
+          await persistMiddle(sword); return stateFor(character);
+        }
         const current = twoSkillState(saved);
         if (current.slots[0] === sword && current.slots[1] === uppercut) return state;
         await persistTwo([sword, uppercut], [sword, uppercut]);
@@ -157,6 +176,11 @@ export async function createMartialStore({ file, checkpoint, character, storage 
       if (saved.checkpoint !== 'observed-event1-before-equip') {
         throw new MartialStateError(409, 'martial_action_not_observed');
       }
+      if (saved.threeSlots !== undefined) {
+        if (position !== 2) throw new MartialStateError(409, 'martial_action_not_observed');
+        if (saved.threeSlots[1] === null) return state;
+        await persistMiddle(null); return stateFor(character);
+      }
       const current = twoSkillState(saved);
       if (current.slots[position - 1] === null) return state;
       const slots = [...current.slots];
@@ -174,6 +198,11 @@ export async function createMartialStore({ file, checkpoint, character, storage 
       const state = stateFor(character);
       if (saved.checkpoint !== 'observed-event1-before-equip') {
         throw new MartialStateError(409, 'martial_action_not_observed');
+      }
+      if (saved.threeSlots !== undefined) {
+        if (skillId !== sword) throw new MartialStateError(409, 'martial_action_not_observed');
+        if (saved.threeSlots[1] === sword) return state;
+        await persistMiddle(sword); return stateFor(character);
       }
       const current = twoSkillState(saved);
       if (current.slots.includes(skillId)) return state;

@@ -88,3 +88,37 @@ test('martial migration binding rejects without write; role changes preserve uni
  const b=await start(t,o);await fetch(b+'/api/character',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({...character,name:'changed'})});
  assert.equal((await upgrade(b,0)).status,409);assert.equal((await fetch(b+'/api/assets')).status,409);
 });
+
+test('explicit three-skill import supports only observed middle removal/refill and preserves growth ledger',async(t)=>{
+ const o=await fixture(t);const raw=JSON.parse(await readFile(o.martialSaveFile,'utf8'));delete raw.twoEquipped;
+ raw.threeSlots=['blue-sword-reference','ruwu-sword-reference','uppercut-reference'];
+ await writeFile(o.martialSaveFile,JSON.stringify(raw));await migrateAssets(o.saveFile,o.realmSaveFile,o.martialSaveFile);
+ const source=await readFile(o.martialSaveFile,'utf8');const b=await start(t,o);const before=await readFile(o.saveFile,'utf8');
+ const initial=await get(b,'/api/martial-state');assert.equal(initial.loadoutMode,'observed-three-reference');assert.deepEqual(initial.actions,{unequipPositions:[2],equipSkillIds:['ruwu-sword-reference']});
+ assert.deepEqual(initial.owned.map(x=>x.id),raw.threeSlots);assert.equal(await readFile(o.saveFile,'utf8'),before);
+ assert.equal((await post(b,'/api/martial-state/unequip-slot',{position:1})).status,409);assert.equal((await post(b,'/api/martial-state/unequip-slot',{position:3})).status,400);
+ assert.equal((await post(b,'/api/martial-state/equip-skill',{skillId:'uppercut-reference'})).status,409);assert.equal(await readFile(o.saveFile,'utf8'),before);
+ const a=await get(b,'/api/assets');
+ const responses=await Promise.all([post(b,'/api/martial-state/unequip-slot',{position:2}),post(b,'/api/martial-state/unequip-slot',{position:2})]);assert.deepEqual(responses.map(x=>x.status),[200,200]);
+ const hole=await get(b,'/api/martial-state');assert.equal(hole.revision,1);assert.deepEqual(hole.slots.slice(0,3).map(x=>x.skillId),['blue-sword-reference',null,'uppercut-reference']);assert.deepEqual(hole.owned.map(x=>x.id),['blue-sword-reference','uppercut-reference','ruwu-sword-reference']);assert.deepEqual(hole.task,initial.task);assert.deepEqual(await get(b,'/api/assets'),a);
+ const bytes=await readFile(o.saveFile,'utf8');await rename(o.saveFile,o.saveFile+'.bak');await mkdir(o.saveFile);
+ assert.equal((await post(b,'/api/martial-state/equip-skill',{skillId:'ruwu-sword-reference'})).status,500);assert.deepEqual(await get(b,'/api/martial-state'),hole);assert.equal(await readFile(o.saveFile+'.bak','utf8'),bytes);
+ await rm(o.saveFile,{recursive:true});await rename(o.saveFile+'.bak',o.saveFile);
+ assert.equal((await post(b,'/api/martial-state/equip-skill',{skillId:'ruwu-sword-reference'})).status,200);
+ assert.equal((await upgrade(b,2)).status,200);assert.equal(material(await get(b,'/api/assets')).available,1);
+ await post(b,'/api/martial-state/unequip-slot',{position:2});await post(b,'/api/martial-state/auto-equip');
+ const final=await get(b,'/api/martial-state');assert.deepEqual(final.slots.slice(0,3).map(x=>x.skillId),raw.threeSlots);assert.equal(final.growth.uppercut.level,2);assert.equal(await readFile(o.martialSaveFile,'utf8'),source);
+ const code='import {createApp} from '+JSON.stringify(new URL('../../server/app.js',import.meta.url).href)+';const s=await createApp(JSON.parse(process.argv[1]));await new Promise(r=>s.listen(0,"127.0.0.1",r));console.log(JSON.stringify(await(await fetch("http://127.0.0.1:"+s.address().port+"/api/martial-state")).json()));s.close();';
+ const result=await promisify(execFile)(process.execPath,['--input-type=module','-e',code,JSON.stringify(o)]);assert.deepEqual(JSON.parse(result.stdout).state,final);
+});
+
+test('three-skill sidecar is explicit and rejects unobserved or mixed save shapes without overwrite',async(t)=>{
+ for(const threeSlots of [['blue-sword-reference',null,null],['ruwu-sword-reference','blue-sword-reference','uppercut-reference'],['blue-sword-reference','ruwu-sword-reference','uppercut-reference']]){
+ const o=await fixture(t);const data=JSON.parse(await readFile(o.martialSaveFile,'utf8'));data.threeSlots=threeSlots;
+ if(threeSlots[1]!=='ruwu-sword-reference')delete data.twoEquipped;
+ const bytes=JSON.stringify(data);await writeFile(o.martialSaveFile,bytes);await assert.rejects(createApp(o),/Invalid local martial save/);assert.equal(await readFile(o.martialSaveFile,'utf8'),bytes);
+ }
+ const o=await fixture(t);const old=await start(t,o);assert.equal((await get(old,'/api/martial-state')).owned.length,2);
+ const other=await fixture(t);const data=JSON.parse(await readFile(other.martialSaveFile,'utf8'));delete data.twoEquipped;data.threeSlots=['blue-sword-reference',null,'uppercut-reference'];await writeFile(other.martialSaveFile,JSON.stringify(data));const base=await start(t,other);
+ assert.equal((await post(base,'/api/martial-state/auto-equip')).status,200);const bytes=await readFile(other.martialSaveFile,'utf8');assert.equal((await post(base,'/api/martial-state/auto-equip')).status,200);assert.equal(await readFile(other.martialSaveFile,'utf8'),bytes);
+});
