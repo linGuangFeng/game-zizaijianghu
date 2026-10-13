@@ -336,7 +336,7 @@ npm.cmd start
 
 `training` 仅允许 trial、stance、run，`expectedRevision` 为 GET 或前次成功响应中的非负安全整数版本号。成功返回 200 完整 `{state:...}`：扣12阅历，对应次数加1、本境界属性分别加2/1/100、累计成功修炼次数加1、revision加1。三类各以10次为上限，进度为三类次数之和，分母30。
 
-任务固定为 `train10-reference`。累计次数落盘，显示进度最多10/10，达到10次后 completed=true；继续训练不领取奖励、不切换20次或30次任务、不推进剧情。没有突破、自然资源到账、资源补充、长按批量或装备接口。默认120阅历最多完成10次训练；全30次的边界测试使用明确标识的人工隔离fixture，不是游戏奖励机制。
+任务固定为 `train10-reference`。累计次数落盘，显示进度最多10/10，达到10次后 completed=true；继续训练不领取奖励、不切换20次或30次任务、不推进剧情。境界接口没有突破、自然资源到账、资源补充或长按批量；独立装备检查点见后文。默认120阅历最多完成10次训练；全30次的边界测试使用明确标识的人工隔离fixture，不是游戏奖励机制。
 
 ### 事务、版本与失败
 
@@ -366,3 +366,88 @@ npm.cmd start
 本次服务端开发回归 **42/42通过**，其中境界8项覆盖普通角色零初始化、整笔状态事务、并发版本防重、三类上限、落盘失败恢复、真实进程重启、非法输入/绑定、损坏文件与路径冲突。独立HTTP QA **8/8通过**，详见 [境界独立QA](realm-qa.md)。
 
 主会话已报告本轮页面范围验收通过；独立HTTP报告的页面栏记录的是该QA代理自身未执行浏览器，不能将开发或HTTP结果冒充页面证据。当前结论仅覆盖本地训练检查点，不代表完整境界成长、突破、资源获取或整款游戏完成。
+## 血战刀装备检查点
+
+本节是自建本地契约，仅复现已观察的血战刀紫色/金色替换样本。正式中文名为“血战刀”，本地 ID 中的 blade 不改变中文名称。普通角色无装备检查点，不会因创角、GET 或点击装备请求获赠物品。
+
+### 环境与启动
+
+先创建本地角色并停止使用该角色文件的服务，再显式启动：
+
+```powershell
+$env:CHARACTER_SAVE_FILE = 'D:\work\hd\game-zizaijianghu\.local\gear-qa-character.json'
+$env:GEAR_CHECKPOINT = 'observed-event5-blade'
+$env:PORT = '3007'
+npm.cmd start
+```
+
+角色文件必须已存在。默认装备存档为角色文件路径追加 `.gear.json`；`GEAR_SAVE_FILE` 可指定独立路径，不能与角色、武学或境界文件同路径。一组存档仅供一个服务进程使用。
+
+仅在装备存档不存在且显式配置检查点的启动时初始化，初始穿戴金色血战刀、revision=0。已有文件不因配置重置，后续不设置 GEAR_CHECKPOINT 也可读取；GET 不初始化或改档。未知检查点、损坏存档或初始化时无角色会启动失败，不覆盖旧数据。
+
+### 状态与穿戴
+
+`GET /api/gear-state` 成功返回200，初始结构如下：
+
+```json
+{
+  "state": {
+    "kind":"local-gear-checkpoint",
+    "checkpoint":"observed-event5-blade",
+    "revision":0,
+    "equippedId":"bloodwar-blade-gold",
+    "owned":[
+      {
+        "id":"bloodwar-blade-purple","name":"血战刀","tier":1,"quality":"紫色","power":1679,
+        "attributes":{"attack":60,"defense":30,"health":2980,"criticalResistance":5}
+      },
+      {
+        "id":"bloodwar-blade-gold","name":"血战刀","tier":1,"quality":"金色","power":2793,
+        "attributes":{"attack":96,"defense":48,"health":4760,"criticalResistance":5}
+      }
+    ],
+    "equipmentAttributes":{"attack":636,"defense":318,"healthText":"3.15万","criticalResistance":50}
+  }
+}
+```
+
+owned 固定紫色→金色，代表本样本两种可选装备，没有数量字段或库存数量承诺。item.attributes 为该件装备展示属性，criticalResistance 表示抗暴。equipmentAttributes 是其他装备贡献保持该样本背景时的装备页基础属性展示；紫色对应攻击600、防御300、气血文本2.98万、抗暴50，金色如上。healthText 保留原显示文本，不能从万值反推精确气血，也不能将其当作完整角色战斗属性或推出通用属性公式。
+
+两个写端点均要求 `Content-Type: application/json`，字段不允许缺失或额外添加：
+
+| 端点 | 严格正文 | 行为 |
+| --- | --- | --- |
+| POST /api/gear-state/equip | `{"itemId":"bloodwar-blade-purple","expectedRevision":0}` | 选择紫色；itemId也可为bloodwar-blade-gold以手动选择金色 |
+| POST /api/gear-state/auto-equip | `{"expectedRevision":1}` | 此两项样本恢复金色，不代表通用最优装备算法 |
+
+成功均返回200完整 `{state:...}`。expectedRevision 必须为读取或前次成功响应中的非负安全整数。实际切换时 equippedId 与 revision+1 一起持久化，返回对应展示属性；角色、武学和境界文件不被修改。
+
+### 本地版本约定与失败
+
+装备文件保存 checkpoint、绑定 character（name/appearanceId）、revision、equippedId。沿用串行队列、同目录临时文件与原子替换，替换成功才更新内存；失败不提前改穿戴状态或版本。
+
+先检查版本再判断同一装备：当前版本选择已穿装备（包含已经穿金色时的一键装备）返回200且不写文件、不增加版本；旧版本即使选择当前装备也返回409。以上为本地并发与幂等约定，不是原版接口事实。同版本并发的两个实际替换请求最多一个提交；无状态变化的请求本身不消耗版本。
+
+版本冲突或响应丢失时重新GET确认状态，不自动重发更换；客户端仅根据成功响应或重读更新展示。
+
+| 状态 / error | 含义 |
+| --- | --- |
+| 404 character_not_found | 无本地角色 |
+| 404 gear_checkpoint_not_initialized | 尚未显式初始化装备检查点 |
+| 409 gear_checkpoint_character_mismatch | 当前角色姓名/外观与绑定不符，不重置装备 |
+| 409 gear_revision_conflict | 版本不是当前版本 |
+| 400 invalid_gear_equip | 手选ID、版本或正文结构不符 |
+| 400 invalid_gear_auto_equip | 一键请求版本或正文结构不符 |
+| 400 invalid_json | JSON无法解析 |
+| 415 json_required | 未声明JSON媒体类型 |
+| 413 body_too_large | 正文超过本地16 KiB限额 |
+| 405 method_not_allowed | 状态路径非GET或穿戴路径非POST |
+| 500 local_operation_failed | 本地持久化等操作失败 |
+
+### 验证与范围
+
+本轮全部服务端开发测试50/50通过，其中装备新增8项；独立HTTP QA 8/8通过，见 [装备独立QA](gear-qa.md)。覆盖普通角色无档、精确属性文本、手选与一键、同装备零写/旧版本冲突、并发、落盘失败恢复、真实新进程恢复、非法输入、绑定与旧存档隔离。
+
+主会话内部浏览器已测普通无档、金色详情→紫色更换、断服失败保持展示与锁写、新进程重读紫色→一键金色、双页旧版本冲突只重读不自动再写、手动金色及刷新保留。页面由主会话执行，独立HTTP代理仅补录报告；已列路径通过，不代表全部竞态或原版视觉通过。
+
+本检查点没有自然解锁、背包数量、战斗掉落、领取奖励、卸下、强化或熔炼；其余装备只有固定背景贡献，未实现完整装备系统。不能将显式样本接入宣称为普通角色已自然通关事件5或整款游戏完成。

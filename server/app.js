@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { createGearStore, GearStateError, gearItems } from './gear-store.js';
 import { createRealmStore, RealmStateError, realmTraining } from './realm-store.js';
 import { martialCatalog } from './martial-catalog.js';
 import { createMartialStore, MartialStateError } from './martial-store.js';
@@ -66,12 +67,14 @@ async function serveStatic(request, response, pathname, clientDirectory) {
   }
 }
 
-export async function createApp({ saveFile, clientDirectory, martialSaveFile = `${saveFile}.martial.json`, martialCheckpoint, realmSaveFile = `${saveFile}.realm.json`, realmCheckpoint }) {
+export async function createApp({ saveFile, clientDirectory, martialSaveFile = `${saveFile}.martial.json`, martialCheckpoint, realmSaveFile = `${saveFile}.realm.json`, realmCheckpoint, gearSaveFile = `${saveFile}.gear.json`, gearCheckpoint }) {
   if (resolve(martialSaveFile) === resolve(saveFile)) throw new Error('Martial and character saves must use separate files.');
   if ([resolve(saveFile), resolve(martialSaveFile)].includes(resolve(realmSaveFile))) throw new Error('Realm save must use a separate file.');
+  if ([resolve(saveFile), resolve(martialSaveFile), resolve(realmSaveFile)].includes(resolve(gearSaveFile))) throw new Error('Gear save must use a separate file.');
   const store = await createCharacterStore(saveFile);
   const martialStore = await createMartialStore({ file: martialSaveFile, checkpoint: martialCheckpoint, character: store.get() });
   const realmStore = await createRealmStore({ file: realmSaveFile, checkpoint: realmCheckpoint, character: store.get() });
+  const gearStore = await createGearStore({ file: gearSaveFile, checkpoint: gearCheckpoint, character: store.get() });
   const clientRoot = resolve(clientDirectory);
   return createServer(async (request, response) => {
     try {
@@ -131,6 +134,26 @@ export async function createApp({ saveFile, clientDirectory, martialSaveFile = `
         }
         return json(response, 200, { state: await realmStore.train(body.training, body.expectedRevision, () => store.get()) });
       }
+      if (pathname === '/api/gear-state') {
+        return request.method === 'GET'
+          ? json(response, 200, { state: gearStore.get(store.get()) })
+          : json(response, 405, { error: 'method_not_allowed' });
+      }
+      if (pathname === '/api/gear-state/equip' || pathname === '/api/gear-state/auto-equip') {
+        if (request.method !== 'POST') return json(response, 405, { error: 'method_not_allowed' });
+        const body = await readJson(request);
+        const automatic = pathname.endsWith('/auto-equip');
+        if (body === null || typeof body !== 'object' || Array.isArray(body)
+          || Object.keys(body).length !== (automatic ? 1 : 2)
+          || !Number.isSafeInteger(body.expectedRevision) || body.expectedRevision < 0
+          || (!automatic && !gearItems.some((item) => item.id === body.itemId))) {
+          return json(response, 400, { error: automatic ? 'invalid_gear_auto_equip' : 'invalid_gear_equip' });
+        }
+        const state = automatic
+          ? await gearStore.autoEquip(body.expectedRevision, () => store.get())
+          : await gearStore.equip(body.itemId, body.expectedRevision, () => store.get());
+        return json(response, 200, { state });
+      }
       if (pathname === '/api/character') {
         if (request.method === 'GET') {
           const character = store.get();
@@ -148,7 +171,7 @@ export async function createApp({ saveFile, clientDirectory, martialSaveFile = `
       if (pathname.startsWith('/api/')) return json(response, 404, { error: 'not_found' });
       return await serveStatic(request, response, pathname, clientRoot);
     } catch (error) {
-      if (error instanceof MartialStateError || error instanceof RealmStateError || error instanceof RequestBodyError) return json(response, error.statusCode, { error: error.errorCode });
+      if (error instanceof MartialStateError || error instanceof RealmStateError || error instanceof GearStateError || error instanceof RequestBodyError) return json(response, error.statusCode, { error: error.errorCode });
       if (!response.headersSent) json(response, 500, { error: 'local_operation_failed' });
       else response.destroy();
     }

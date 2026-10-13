@@ -1,5 +1,5 @@
 const byId = (id) => document.getElementById(id);
-const panels = ['appearance-step', 'name-step', 'jianghu-panel', 'saved-step', 'martial-list', 'martial-detail', 'equipment-panel', 'realm-panel'];
+const panels = ['appearance-step', 'name-step', 'jianghu-panel', 'saved-step', 'martial-list', 'martial-detail', 'equipment-panel', 'realm-panel', 'gear-panel'];
 const genderLabels = {
   'male-reference-0002': '男',
   'female-reference-0003': '女',
@@ -14,7 +14,7 @@ function status(message, error = false) {
 }
 
 function showPanel(id) {
-  byId('portrait-area').hidden = id === 'martial-list' || id === 'martial-detail' || id === 'equipment-panel' || id === 'jianghu-panel' || id === 'realm-panel';
+  byId('portrait-area').hidden = id === 'martial-list' || id === 'martial-detail' || id === 'equipment-panel' || id === 'jianghu-panel' || id === 'realm-panel' || id === 'gear-panel';
   for (const panel of panels) byId(panel).hidden = panel !== id;
 }
 
@@ -39,6 +39,7 @@ function showCharacter(character) {
   showJianghu();
   readCheckpoint();
   readRealm();
+  readGear();
 }
 
 async function readCharacter() {
@@ -577,3 +578,144 @@ byId('open-realm').addEventListener('click', () => {
 byId('retry-realm-entry').addEventListener('click', readRealm);
 byId('retry-realm').addEventListener('click', readRealm);
 byId('back-realm').addEventListener('click', showRealmProfile);
+
+let gearState = null;
+let gearRequest = 0;
+let gearBusy = false;
+let gearReady = false;
+
+function gearControls() {
+  for (const button of byId('gear-panel').querySelectorAll('button')) {
+    const navigation = button.id === 'back-gear' || button.id === 'retry-gear';
+    button.disabled = gearBusy || (!navigation && !gearReady) || button.dataset.equipped === 'true';
+  }
+  byId('retry-gear-entry').disabled = gearBusy;
+}
+
+function gearItemFacts(container, item) {
+  container.replaceChildren();
+  for (const [label, value] of [
+    ['品阶', `${item.quality} · ${item.tier}阶`], ['武力值', item.power],
+    ['攻击', item.attributes.attack], ['防御', item.attributes.defense],
+    ['气血', item.attributes.health], ['抗暴', item.attributes.criticalResistance],
+  ]) addFact(container, label, value);
+}
+
+function displayGear(state) {
+  gearState = state;
+  const equipped = state.owned.find((item) => item.id === state.equippedId);
+  byId('gear-equipped').textContent = `${equipped.quality} ${equipped.name} · ${equipped.tier}阶 · 已装备`;
+  byId('gear-detail-title').textContent = equipped.name;
+  gearItemFacts(byId('gear-item-attributes'), equipped);
+  byId('gear-attributes').replaceChildren();
+  for (const [label, value] of [
+    ['攻击', state.equipmentAttributes.attack], ['防御', state.equipmentAttributes.defense],
+    ['气血', state.equipmentAttributes.healthText], ['抗暴', state.equipmentAttributes.criticalResistance],
+  ]) addFact(byId('gear-attributes'), label, value);
+  byId('gear-candidates').replaceChildren();
+  for (const item of state.owned) {
+    const card = document.createElement('div');
+    card.className = 'gear-candidate';
+    const name = document.createElement('strong');
+    name.textContent = `${item.quality} ${item.name} · ${item.tier}阶`;
+    const power = document.createElement('span');
+    power.textContent = `基础武力值：${item.power}`;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.equipped = String(item.id === state.equippedId);
+    button.textContent = item.id === state.equippedId ? '已装备' : '装备';
+    button.setAttribute('aria-label', `${button.textContent}${item.quality}${item.name}`);
+    button.addEventListener('click', () => writeGear(item.id));
+    card.append(name, power, button);
+    byId('gear-candidates').append(card);
+  }
+}
+
+async function readGear() {
+  const request = ++gearRequest;
+  gearReady = false;
+  gearControls();
+  byId('retry-gear-entry').hidden = true;
+  byId('retry-gear').hidden = true;
+  try {
+    const response = await fetch('/api/gear-state');
+    if (request !== gearRequest) return;
+    if (response.status === 404) {
+      gearState = null;
+      byId('open-gear').hidden = true;
+      byId('gear-entry-message').textContent = '';
+      byId('gear-candidates').replaceChildren();
+      if (!byId('gear-panel').hidden) showRealmProfile();
+      return;
+    }
+    if (!response.ok) throw new Error('read_failed');
+    const result = await response.json();
+    if (request !== gearRequest) return;
+    displayGear(result.state);
+    gearReady = true;
+    byId('open-gear').hidden = false;
+    byId('gear-entry-message').textContent = '';
+    byId('gear-message').textContent = '';
+    gearControls();
+  } catch {
+    if (request !== gearRequest) return;
+    byId('gear-entry-message').textContent = '装备读取失败，请重试。';
+    byId('gear-message').textContent = '装备读取失败，请重试。';
+    byId('retry-gear-entry').hidden = false;
+    byId('retry-gear').hidden = false;
+  }
+}
+
+async function writeGear(itemId) {
+  if (gearBusy || !gearReady) return;
+  gearBusy = true;
+  ++gearRequest;
+  gearControls();
+  byId('gear-message').textContent = '正在穿戴……';
+  try {
+    const response = await fetch(itemId ? '/api/gear-state/equip' : '/api/gear-state/auto-equip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(itemId ? { itemId, expectedRevision: gearState.revision } : { expectedRevision: gearState.revision }),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      if (result.error === 'gear_revision_conflict') {
+        await readGear();
+        if (gearReady) byId('gear-message').textContent = '装备记录已更新，请重新选择。';
+        return;
+      }
+      throw new Error(result.error === 'gear_checkpoint_character_mismatch' ? '装备记录与当前角色不匹配。' : 'write_failed');
+    }
+    displayGear(result.state);
+    byId('gear-message').textContent = '穿戴成功';
+  } catch (error) {
+    gearReady = false;
+    byId('gear-message').textContent = error.message === '装备记录与当前角色不匹配。' ? error.message : '穿戴结果暂未确认，请重新读取装备。';
+    byId('retry-gear').hidden = false;
+  } finally {
+    gearBusy = false;
+    gearControls();
+  }
+}
+
+byId('open-gear').addEventListener('click', () => {
+  showPanel('gear-panel');
+  byId('title').textContent = '装备';
+  byId('gear-detail').hidden = true;
+  byId('gear-candidates-panel').hidden = true;
+  status('');
+  byId('gear-message').textContent = '正在读取装备……';
+  readGear();
+});
+byId('gear-equipped').addEventListener('click', () => {
+  byId('gear-detail').hidden = false;
+  byId('gear-candidates-panel').hidden = true;
+});
+byId('change-gear').addEventListener('click', () => {
+  byId('gear-candidates-panel').hidden = false;
+});
+byId('gear-auto').addEventListener('click', () => writeGear());
+byId('retry-gear').addEventListener('click', readGear);
+byId('retry-gear-entry').addEventListener('click', readGear);
+byId('back-gear').addEventListener('click', showRealmProfile);

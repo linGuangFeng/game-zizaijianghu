@@ -83,3 +83,11 @@ dd { margin: 0; overflow-wrap: anywhere; }
 .realm-training-card { border: 1px solid #b8a77c; background: #e9dfc6; display: flex; flex-direction: column; text-align: center; font-size: 12px; gap: 18px; padding-top: 14px; }
 .realm-training-card button { min-height: 48px; padding: 7px 3px; font-size: 12px; color: #544732; background: #e0cba1; border-color: #b8a77c; }
 #realm-panel > button { width: 100%; margin-top: 10px; }
+
+#open-gear { margin-top: 18px; }
+#gear-panel { margin-top: 20px; }
+#gear-panel > button, #change-gear { width: 100%; margin-top: 12px; }
+#gear-panel h3 { font-size: 16px; margin-top: 22px; }
+#gear-panel dl { font-size: 14px; }
+#gear-detail, #gear-candidates-panel { border-top: 1px solid #b8a77c; margin-top: 18px; }
+.gear-candidate { padding: 14px; margin-block: 12px; display: grid; gap: 12px; border: 1px solid #b8a77c; background: #e9dfc6; font-size: 14px; }

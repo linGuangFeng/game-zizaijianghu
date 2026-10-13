@@ -34,7 +34,23 @@
     </section>
     <section id="saved-step" hidden aria-labelledby="saved-title">
       <h2 id="saved-title">我的角色</h2>
-      <dl><div><dt>角色名称</dt><dd id="saved-name"></dd></div><div><dt>性别</dt><dd id="saved-appearance"></dd></div></dl><button id="open-realm" class="primary" type="button" hidden>境界</button><p id="realm-entry-message" class="status" role="status"></p><button id="retry-realm-entry" class="secondary" type="button" hidden>重新读取境界</button><button id="open-martial" class="primary" type="button">武学图鉴</button><button id="back-jianghu" class="secondary" type="button">返回江湖</button>
+      <dl><div><dt>角色名称</dt><dd id="saved-name"></dd></div><div><dt>性别</dt><dd id="saved-appearance"></dd></div></dl><button id="open-gear" class="primary" type="button" hidden>装备</button><p id="gear-entry-message" class="status" role="status"></p><button id="retry-gear-entry" class="secondary" type="button" hidden>重新读取装备</button><button id="open-realm" class="primary" type="button" hidden>境界</button><p id="realm-entry-message" class="status" role="status"></p><button id="retry-realm-entry" class="secondary" type="button" hidden>重新读取境界</button><button id="open-martial" class="primary" type="button">武学图鉴</button><button id="back-jianghu" class="secondary" type="button">返回江湖</button>
+    </section>
+    <section id="gear-panel" hidden aria-labelledby="gear-title">
+      <h2 id="gear-title">装备</h2>
+      <button id="gear-equipped" class="martial-card" type="button"></button>
+      <h3>装备基础属性</h3><dl id="gear-attributes"></dl>
+      <section id="gear-detail" hidden aria-labelledby="gear-detail-title">
+        <h3 id="gear-detail-title"></h3><dl id="gear-item-attributes"></dl>
+        <button id="change-gear" class="primary" type="button">更换装备</button>
+      </section>
+      <section id="gear-candidates-panel" hidden aria-labelledby="gear-candidates-title">
+        <h3 id="gear-candidates-title">更换装备</h3><div id="gear-candidates"></div>
+      </section>
+      <p id="gear-message" class="status" role="status" aria-live="polite"></p>
+      <button id="gear-auto" class="primary" type="button">一键穿戴</button>
+      <button id="retry-gear" class="secondary" type="button" hidden>重新读取装备</button>
+      <button id="back-gear" class="secondary" type="button">返回角色</button>
     </section>
     <section id="realm-panel" hidden aria-labelledby="realm-name">
       <p id="realm-resource"></p>

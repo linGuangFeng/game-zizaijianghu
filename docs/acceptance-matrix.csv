@@ -21,6 +21,7 @@ LOCAL-06,checkpoint,双技能指定槽卸下,两技能已确认状态集合,独�
 LOCAL-07,checkpoint,双技能手动卡片装配,两技能已确认状态集合,独立11项及19项旧接口回归通过,主会话卡片装卸双顺序空洞补位失败恢复及重启通过,PASS,已装卡片卸下由页面走独立卸下接口；不代表原版重复请求规则,docs/martial-manual-qa.md
 FLOW-01,full-flow,普通角色自然到达主场景与武学及装备,完整复刻目标,无检查点的前置任务与获取状态链待实现,从空存档创建角色后自然进入完整流程待实现,BLOCKED,现武学依赖显式检查点；没有主场景与装备实际闭环,docs/test-plan.md；docs/local-api.md
 VISUAL-01,visual,已取证页面1比1视觉与动画音频,完整复刻目标,不适用,当前为文字标记及CSS基础布局；未通过原版视觉验收,BLOCKED,角色背景图标字体动画音频独立素材缺失；禁止用局部接口通过代替视觉通过,docs/visual-asset-inventory.md
-EQUIP-01,full-flow,人物装备解锁获取穿戴与保存,完整复刻目标,装备合同尚未确认,原版装备尚未解锁；继续前置取证,BLOCKED,不能把代码equipment-panel武学装配面板当作人物装备实现,docs/test-plan.md
+EQUIP-01,full-flow,人物装备解锁获取穿戴与保存,完整复刻目标,已确认血战刀局部合同；全装备待扩展,原版事件5装备解锁及局部更换已证实,BLOCKED,不能把代码equipment-panel武学装配面板当作人物装备实现,docs/test-plan.md
 LOCAL-NAV,local-function,江湖导航容器与已实现页面往返,本地阶段交付,普通角色与检查点实际响应驱动入口,内部浏览器普通创角导航刷新及两种慢响应通过,PASS,仅容器导航；地图自然任务战斗和美术未完成,docs/main-scene-qa.md
 LOCAL-REALM,checkpoint,初入江湖三类训练事务,observed-before-training显式检查点,独立HTTP8项通过,主会话三类训练断服重读耗尽刷新双页冲突及人工上限通过,PASS,仅120阅历起点与train10；主线迁移突破资源获取美术未实现,docs/realm-qa.md
+LOCAL-GEAR,checkpoint,血战刀金紫更换与一键穿戴,observed-event5-blade显式样本,独立HTTP8项通过,主会话更换失败恢复双页冲突手动金与刷新通过,PASS,固定其他装备背景贡献；无普通角色自然解锁与完整美术,docs/gear-qa.md
