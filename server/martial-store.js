@@ -3,6 +3,26 @@ import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { isCharacter } from './store.js';
 
+const uppercut = 'uppercut-reference';
+const sword = 'ruwu-sword-reference';
+function twoSkillState(data) {
+  return data.twoSlots !== undefined
+    ? { slots: data.twoSlots, ownedOrder: data.ownedOrder }
+    : data.twoEquipped
+      ? { slots: [sword, uppercut], ownedOrder: [sword, uppercut] }
+      : { slots: [uppercut, null], ownedOrder: [uppercut, sword] };
+}
+function validTwoSave(data) {
+  if (data.twoSlots === undefined) return typeof data.twoEquipped === 'boolean' && data.ownedOrder === undefined;
+  const knownStates = [
+    { slots: [uppercut, null], ownedOrder: [uppercut, sword] },
+    { slots: [sword, uppercut], ownedOrder: [sword, uppercut] },
+    { slots: [null, uppercut], ownedOrder: [uppercut, sword] },
+    { slots: [sword, null], ownedOrder: [sword, uppercut] },
+    { slots: [null, null], ownedOrder: [sword, uppercut] },
+  ];
+  return knownStates.some((state) => JSON.stringify(state) === JSON.stringify(twoSkillState(data)));
+}
 export class MartialStateError extends Error {
   constructor(statusCode, errorCode) {
     super(errorCode);
@@ -21,7 +41,7 @@ export async function createMartialStore({ file, checkpoint, character }) {
     saved = JSON.parse(await readFile(file, 'utf8'));
     const validState = saved?.checkpoint === 'observed-before-equip'
       ? typeof saved.equipped === 'boolean' && typeof saved.taskComplete === 'boolean'
-      : saved?.checkpoint === 'observed-event1-before-equip' && typeof saved.twoEquipped === 'boolean';
+      : saved?.checkpoint === 'observed-event1-before-equip' && validTwoSave(saved);
     if (!validState || !isCharacter(saved.character)) {
       throw new Error('Invalid local martial save.');
     }
@@ -45,7 +65,7 @@ export async function createMartialStore({ file, checkpoint, character }) {
   if (saved === null && checkpoint !== undefined) {
     if (character === null) throw new Error('Create a local character before starting the observed martial checkpoint.');
     const initial = checkpoint === 'observed-event1-before-equip'
-      ? { twoEquipped: false } : { equipped: false, taskComplete: false };
+      ? { twoSlots: [uppercut, null], ownedOrder: [uppercut, sword] } : { equipped: false, taskComplete: false };
     await persist({ checkpoint, character: { ...character }, ...initial });
   }
 
@@ -56,10 +76,7 @@ export async function createMartialStore({ file, checkpoint, character }) {
       throw new MartialStateError(409, 'martial_checkpoint_character_mismatch');
     }
     if (saved.checkpoint === 'observed-event1-before-equip') {
-      const ownedIds = saved.twoEquipped
-        ? ['ruwu-sword-reference', 'uppercut-reference']
-        : ['uppercut-reference', 'ruwu-sword-reference'];
-      const assigned = saved.twoEquipped ? ownedIds : ['uppercut-reference'];
+      const { slots: assigned, ownedOrder: ownedIds } = twoSkillState(saved);
       return {
         kind: 'local-martial-checkpoint',
         checkpoint: saved.checkpoint,
@@ -80,6 +97,9 @@ export async function createMartialStore({ file, checkpoint, character }) {
       task: { id: 'equip-martial-reference', label: '装配武学', current: saved.taskComplete ? 1 : 0, target: 1 },
     };
   }
+  async function persistTwo(twoSlots, ownedOrder) {
+    await persist({ checkpoint: saved.checkpoint, character: saved.character, twoSlots, ownedOrder });
+  }
   let queue = Promise.resolve();
   function setEquipped(equipped, getCharacter) {
     const operation = queue.then(async () => {
@@ -87,8 +107,9 @@ export async function createMartialStore({ file, checkpoint, character }) {
       const state = stateFor(character);
       if (saved.checkpoint === 'observed-event1-before-equip') {
         if (!equipped) throw new MartialStateError(409, 'martial_action_not_observed');
-        if (saved.twoEquipped) return state;
-        await persist({ ...saved, twoEquipped: true });
+        const current = twoSkillState(saved);
+        if (current.slots[0] === sword && current.slots[1] === uppercut) return state;
+        await persistTwo([sword, uppercut], [sword, uppercut]);
         return stateFor(character);
       }
       const taskComplete = saved.taskComplete || equipped;
@@ -99,8 +120,27 @@ export async function createMartialStore({ file, checkpoint, character }) {
     queue = operation.catch(() => {});
     return operation;
   }
+  function unequipSlot(position, getCharacter) {
+    const operation = queue.then(async () => {
+      const character = getCharacter();
+      const state = stateFor(character);
+      if (saved.checkpoint !== 'observed-event1-before-equip') {
+        throw new MartialStateError(409, 'martial_action_not_observed');
+      }
+      const current = twoSkillState(saved);
+      if (current.slots[position - 1] === null) return state;
+      const slots = [...current.slots];
+      slots[position - 1] = null;
+      const ownedOrder = slots.includes(uppercut) ? [uppercut, sword] : [sword, uppercut];
+      await persistTwo(slots, ownedOrder);
+      return stateFor(character);
+    });
+    queue = operation.catch(() => {});
+    return operation;
+  }
   return {
     get: stateFor,
+    unequipSlot,
     equip: (getCharacter) => setEquipped(true, getCharacter),
     unequip: (getCharacter) => setEquipped(false, getCharacter),
   };

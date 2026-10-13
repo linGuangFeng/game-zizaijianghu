@@ -215,7 +215,7 @@ const equippedSkillNames = {
 
 function displayCheckpoint(state) {
   equipmentState = state;
-  const canEdit = state.checkpoint === 'observed-before-equip';
+  const canEdit = state.checkpoint === 'observed-before-equip' || state.checkpoint === 'observed-event1-before-equip';
   if (!canEdit) editingEquipment = false;
   byId('edit-equipment').hidden = !canEdit;
   byId('edit-equipment').textContent = editingEquipment ? '退出编辑' : '编辑';
@@ -232,14 +232,14 @@ function displayCheckpoint(state) {
     number.textContent = String(slot.position);
     item.setAttribute('aria-label', `槽位 ${slot.position}：${slot.locked ? '锁定' : slot.skillId ? equippedSkillNames[slot.skillId] : '空'}`);
     item.append(label, number);
-    if (editingEquipment && slot.position === 1 && slot.skillId) {
+    if (editingEquipment && slot.skillId && (slot.position === 1 || (state.checkpoint === 'observed-event1-before-equip' && slot.position === 2))) {
       const remove = document.createElement('button');
       remove.type = 'button';
       remove.className = 'unequip-button';
       remove.textContent = '×';
-      remove.setAttribute('aria-label', '卸下上勾拳');
+      remove.setAttribute('aria-label', '卸下' + equippedSkillNames[slot.skillId]);
       remove.disabled = equipping;
-      remove.addEventListener('click', unequipMartial);
+      remove.addEventListener('click', () => unequipMartial(slot.position));
       item.append(remove);
     }
     byId('equipment-slots').append(item);
@@ -346,7 +346,7 @@ byId('edit-equipment').addEventListener('click', () => {
   displayCheckpoint(equipmentState);
 });
 
-async function unequipMartial() {
+async function unequipMartial(position) {
   if (equipping) return;
   equipping = true;
   byId('auto-equip').disabled = true;
@@ -355,7 +355,13 @@ async function unequipMartial() {
   for (const button of byId('equipment-slots').querySelectorAll('button')) button.disabled = true;
   status('正在卸下……');
   try {
-    const response = await fetch('/api/martial-state/unequip', { method: 'POST' });
+    const isTwoSkillCheckpoint = equipmentState.checkpoint === 'observed-event1-before-equip';
+    const response = await fetch(isTwoSkillCheckpoint ? '/api/martial-state/unequip-slot' : '/api/martial-state/unequip',
+      isTwoSkillCheckpoint ? {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ position }),
+      } : { method: 'POST' });
     if (!response.ok) throw new Error('unequip_failed');
     displayCheckpoint((await response.json()).state);
     status('卸下成功');

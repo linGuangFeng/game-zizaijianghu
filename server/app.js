@@ -17,6 +17,27 @@ function json(response, status, value) {
   response.end(JSON.stringify(value));
 }
 
+class RequestBodyError extends Error {
+  constructor(statusCode, errorCode) {
+    super(errorCode);
+    this.statusCode = statusCode;
+    this.errorCode = errorCode;
+  }
+}
+async function readJson(request) {
+  if (request.headers['content-type']?.split(';')[0].trim().toLowerCase() !== 'application/json') {
+    throw new RequestBodyError(415, 'json_required');
+  }
+  const chunks = [];
+  let bytes = 0;
+  for await (const chunk of request) {
+    bytes += chunk.length;
+    if (bytes <= 16384) chunks.push(chunk);
+  }
+  if (bytes > 16384) throw new RequestBodyError(413, 'body_too_large');
+  try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); }
+  catch { throw new RequestBodyError(400, 'invalid_json'); }
+}
 function within(root, target) {
   const path = relative(root, target);
   return path !== '..' && !path.startsWith(`..${sep}`) && !isAbsolute(path);
@@ -74,6 +95,15 @@ export async function createApp({ saveFile, clientDirectory, martialSaveFile = `
         const action = pathname.endsWith('/unequip') ? martialStore.unequip : martialStore.equip;
         return json(response, 200, { state: await action(() => store.get()) });
       }
+      if (pathname === '/api/martial-state/unequip-slot') {
+        if (request.method !== 'POST') return json(response, 405, { error: 'method_not_allowed' });
+        const body = await readJson(request);
+        if (body === null || typeof body !== 'object' || Array.isArray(body)
+          || Object.keys(body).length !== 1 || ![1, 2].includes(body.position)) {
+          return json(response, 400, { error: 'invalid_martial_slot' });
+        }
+        return json(response, 200, { state: await martialStore.unequipSlot(body.position, () => store.get()) });
+      }
       if (pathname === '/api/character') {
         if (request.method === 'GET') {
           const character = store.get();
@@ -82,20 +112,7 @@ export async function createApp({ saveFile, clientDirectory, martialSaveFile = `
             : json(response, 200, { character });
         }
         if (request.method === 'PUT') {
-          if (request.headers['content-type']?.split(';')[0].trim().toLowerCase() !== 'application/json') {
-            return json(response, 415, { error: 'json_required' });
-          }
-          const chunks = [];
-          let bytes = 0;
-          for await (const chunk of request) {
-            bytes += chunk.length;
-            if (bytes <= 16384) chunks.push(chunk);
-          }
-          if (bytes > 16384) return json(response, 413, { error: 'body_too_large' });
-          const body = Buffer.concat(chunks).toString('utf8');
-          let character;
-          try { character = JSON.parse(body); }
-          catch { return json(response, 400, { error: 'invalid_json' }); }
+          const character = await readJson(request);
           if (!isCharacter(character)) return json(response, 400, { error: 'invalid_character_shape' });
           return json(response, 200, { character: await store.save(character) });
         }
@@ -104,7 +121,7 @@ export async function createApp({ saveFile, clientDirectory, martialSaveFile = `
       if (pathname.startsWith('/api/')) return json(response, 404, { error: 'not_found' });
       return await serveStatic(request, response, pathname, clientRoot);
     } catch (error) {
-      if (error instanceof MartialStateError) return json(response, error.statusCode, { error: error.errorCode });
+      if (error instanceof MartialStateError || error instanceof RequestBodyError) return json(response, error.statusCode, { error: error.errorCode });
       if (!response.headersSent) json(response, 500, { error: 'local_operation_failed' });
       else response.destroy();
     }
