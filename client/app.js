@@ -1,5 +1,5 @@
 const byId = (id) => document.getElementById(id);
-const panels = ['appearance-step', 'name-step', 'saved-step', 'martial-list', 'martial-detail', 'equipment-panel'];
+const panels = ['appearance-step', 'name-step', 'jianghu-panel', 'saved-step', 'martial-list', 'martial-detail', 'equipment-panel'];
 const genderLabels = {
   'male-reference-0002': '男',
   'female-reference-0003': '女',
@@ -14,7 +14,7 @@ function status(message, error = false) {
 }
 
 function showPanel(id) {
-  byId('portrait-area').hidden = id === 'martial-list' || id === 'martial-detail' || id === 'equipment-panel';
+  byId('portrait-area').hidden = id === 'martial-list' || id === 'martial-detail' || id === 'equipment-panel' || id === 'jianghu-panel';
   for (const panel of panels) byId(panel).hidden = panel !== id;
 }
 
@@ -32,9 +32,11 @@ function showCharacter(character) {
   appearanceId = character.appearanceId;
   updateAppearance();
   byId('title').textContent = '我的角色';
+  byId('jianghu-name').textContent = character.name;
+  byId('jianghu-appearance').textContent = genderLabels[character.appearanceId] + '角色';
   byId('saved-name').textContent = character.name;
   byId('saved-appearance').textContent = genderLabels[character.appearanceId];
-  showPanel('saved-step');
+  showJianghu();
   readCheckpoint();
 }
 
@@ -205,6 +207,7 @@ byId('back-martial-list').addEventListener('click', () => {
 });
 
 
+let checkpointRequest = 0;
 let equipping = false;
 let editingEquipment = false;
 let equipmentState = null;
@@ -275,6 +278,7 @@ function displayCheckpoint(state) {
 }
 
 async function readCheckpoint() {
+  const request = ++checkpointRequest;
   byId('retry-checkpoint').hidden = true;
   byId('retry-equipment').hidden = true;
   byId('auto-equip').disabled = true;
@@ -282,25 +286,32 @@ async function readCheckpoint() {
   for (const button of document.querySelectorAll('#equipment-slots button, #equipment-owned button')) button.disabled = true;
   try {
     const response = await fetch('/api/martial-state');
+    if (request !== checkpointRequest) return;
     if (response.status === 404) {
+      equipmentState = null;
+      editingEquipment = false;
+      byId('equipment-slots').replaceChildren();
+      byId('equipment-owned').replaceChildren();
+      byId('equipment-task').textContent = '';
 
       byId('open-equipment').hidden = true;
       byId('checkpoint-message').textContent = '';
       if (!byId('equipment-panel').hidden) {
-        showPanel('saved-step');
-        byId('title').textContent = '我的角色';
-        status('');
+        showJianghu();
       }
       return;
     }
     if (!response.ok) throw new Error(response.status === 409 ? 'mismatch' : 'read_failed');
-    displayCheckpoint((await response.json()).state);
+    const result = await response.json();
+    if (request !== checkpointRequest) return;
+    displayCheckpoint(result.state);
     byId('open-equipment').hidden = false;
     byId('auto-equip').disabled = false;
     byId('edit-equipment').disabled = false;
     for (const button of document.querySelectorAll('#equipment-slots button, #equipment-owned button')) button.disabled = false;
     if (!byId('equipment-panel').hidden) status('');
   } catch (error) {
+    if (request !== checkpointRequest) return;
     const message = error.message === 'mismatch' ? '武学记录与当前角色不匹配。' : '武学读取失败，请重试。';
     byId('checkpoint-message').textContent = message;
     byId('retry-checkpoint').hidden = false;
@@ -320,14 +331,11 @@ byId('open-equipment').addEventListener('click', () => {
 });
 byId('retry-checkpoint').addEventListener('click', readCheckpoint);
 byId('retry-equipment').addEventListener('click', readCheckpoint);
-byId('back-equipment').addEventListener('click', () => {
-  showPanel('saved-step');
-  byId('title').textContent = '我的角色';
-  status('');
-});
+byId('back-equipment').addEventListener('click', showJianghu);
 byId('auto-equip').addEventListener('click', async () => {
   if (equipping) return;
   equipping = true;
+  ++checkpointRequest;
   byId('auto-equip').disabled = true;
   byId('edit-equipment').disabled = true;
   for (const button of document.querySelectorAll('#equipment-slots button, #equipment-owned button')) button.disabled = true;
@@ -357,6 +365,7 @@ byId('edit-equipment').addEventListener('click', () => {
 async function unequipMartial(position) {
   if (equipping) return;
   equipping = true;
+  ++checkpointRequest;
   byId('auto-equip').disabled = true;
   byId('edit-equipment').disabled = true;
   byId('back-equipment').disabled = true;
@@ -387,6 +396,7 @@ async function unequipMartial(position) {
 async function equipMartialSkill(skillId) {
   if (equipping) return;
   equipping = true;
+  ++checkpointRequest;
   byId('auto-equip').disabled = true;
   byId('edit-equipment').disabled = true;
   byId('back-equipment').disabled = true;
@@ -411,3 +421,16 @@ async function equipMartialSkill(skillId) {
     for (const button of document.querySelectorAll('#equipment-slots button, #equipment-owned button')) button.disabled = false;
   }
 }
+
+function showJianghu() {
+  showPanel('jianghu-panel');
+  byId('title').textContent = '江湖';
+  status('');
+}
+
+byId('open-character').addEventListener('click', () => {
+  showPanel('saved-step');
+  byId('title').textContent = '我的角色';
+  status('');
+});
+byId('back-jianghu').addEventListener('click', showJianghu);
