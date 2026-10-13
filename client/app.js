@@ -1,5 +1,5 @@
 const byId = (id) => document.getElementById(id);
-const panels = ['appearance-step', 'name-step', 'jianghu-panel', 'saved-step', 'martial-list', 'martial-detail', 'equipment-panel'];
+const panels = ['appearance-step', 'name-step', 'jianghu-panel', 'saved-step', 'martial-list', 'martial-detail', 'equipment-panel', 'realm-panel'];
 const genderLabels = {
   'male-reference-0002': '男',
   'female-reference-0003': '女',
@@ -14,7 +14,7 @@ function status(message, error = false) {
 }
 
 function showPanel(id) {
-  byId('portrait-area').hidden = id === 'martial-list' || id === 'martial-detail' || id === 'equipment-panel' || id === 'jianghu-panel';
+  byId('portrait-area').hidden = id === 'martial-list' || id === 'martial-detail' || id === 'equipment-panel' || id === 'jianghu-panel' || id === 'realm-panel';
   for (const panel of panels) byId(panel).hidden = panel !== id;
 }
 
@@ -38,6 +38,7 @@ function showCharacter(character) {
   byId('saved-appearance').textContent = genderLabels[character.appearanceId];
   showJianghu();
   readCheckpoint();
+  readRealm();
 }
 
 async function readCharacter() {
@@ -434,3 +435,145 @@ byId('open-character').addEventListener('click', () => {
   status('');
 });
 byId('back-jianghu').addEventListener('click', showJianghu);
+
+let realmState = null;
+let realmRequest = 0;
+let realmBusy = false;
+let realmReady = false;
+const realmAttributeNames = { attack: '攻击', defense: '防御', health: '气血' };
+
+function realmMessage(message) {
+  byId('realm-message').textContent = message;
+}
+
+function realmControls() {
+  for (const button of byId('realm-training').querySelectorAll('button')) {
+    button.disabled = realmBusy || !realmReady || button.dataset.full === 'true';
+  }
+  byId('back-realm').disabled = realmBusy;
+  byId('retry-realm').disabled = realmBusy;
+  byId('retry-realm-entry').disabled = realmBusy;
+}
+
+function displayRealm(state) {
+  realmState = state;
+  byId('realm-resource').textContent = `${state.resource.name}：${state.resource.amount}`;
+  byId('realm-name').textContent = state.realm.name;
+  byId('realm-progress').textContent = `${state.realm.progress.current}/${state.realm.progress.target}`;
+  byId('realm-attributes').replaceChildren();
+  for (const [key, label] of Object.entries(realmAttributeNames)) {
+    addFact(byId('realm-attributes'), label, '+' + state.realm.attributes[key]);
+  }
+  byId('realm-training').replaceChildren();
+  for (const training of state.training) {
+    const card = document.createElement('div');
+    card.className = 'realm-training-card';
+    const name = document.createElement('strong');
+    name.textContent = `${training.name}(${training.count}/${training.limit})`;
+    const attribute = document.createElement('span');
+    attribute.textContent = `${realmAttributeNames[training.attribute]} +${training.count * training.gain}`;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.full = String(training.count >= training.limit);
+    button.textContent = training.count >= training.limit ? '已达瓶颈' : `${state.resource.name} ${training.cost}`;
+    button.setAttribute('aria-label', `${training.name}：${button.textContent}`);
+    button.addEventListener('click', () => trainRealm(training.id));
+    card.append(name, attribute, button);
+    byId('realm-training').append(card);
+  }
+  byId('realm-task').textContent = `${state.task.label} ${state.task.current}/${state.task.target}`;
+}
+
+async function readRealm() {
+  const request = ++realmRequest;
+  realmReady = false;
+  realmControls();
+  byId('retry-realm-entry').hidden = true;
+  byId('retry-realm').hidden = true;
+  try {
+    const response = await fetch('/api/realm-state');
+    if (request !== realmRequest) return;
+    if (response.status === 404) {
+      realmState = null;
+      byId('open-realm').hidden = true;
+      byId('realm-entry-message').textContent = '';
+      byId('realm-training').replaceChildren();
+      if (!byId('realm-panel').hidden) showRealmProfile();
+      return;
+    }
+    if (!response.ok) throw new Error('read_failed');
+    const result = await response.json();
+    if (request !== realmRequest) return;
+    displayRealm(result.state);
+    realmReady = true;
+    byId('open-realm').hidden = false;
+    byId('realm-entry-message').textContent = '';
+    realmMessage('');
+    realmControls();
+  } catch {
+    if (request !== realmRequest) return;
+    byId('realm-entry-message').textContent = '境界读取失败，请重试。';
+    realmMessage('境界读取失败，请重试。');
+    byId('retry-realm-entry').hidden = false;
+    byId('retry-realm').hidden = false;
+  }
+}
+
+async function trainRealm(training) {
+  if (realmBusy || !realmReady) return;
+  realmBusy = true;
+  ++realmRequest;
+  realmControls();
+  realmMessage('正在修炼……');
+  try {
+    const response = await fetch('/api/realm-state/train', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ training, expectedRevision: realmState.revision }),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      if (result.error === 'realm_revision_conflict') {
+        await readRealm();
+        if (realmReady) realmMessage('修炼记录已更新，请重新选择。');
+        return;
+      }
+      const messages = {
+        realm_experience_insufficient: '江湖阅历不足',
+        realm_training_at_limit: '已达瓶颈',
+        realm_checkpoint_character_mismatch: '境界记录与当前角色不匹配。',
+      };
+      if (result.error === 'realm_experience_insufficient' || result.error === 'realm_training_at_limit') {
+        realmMessage(messages[result.error]);
+        return;
+      }
+      throw new Error(messages[result.error] || '修炼结果暂未确认，请重新读取境界。');
+    }
+    displayRealm(result.state);
+    realmMessage('修炼成功');
+  } catch (error) {
+    realmReady = false;
+    realmMessage(error.message === '境界记录与当前角色不匹配。' ? error.message : '修炼结果暂未确认，请重新读取境界。');
+    byId('retry-realm').hidden = false;
+  } finally {
+    realmBusy = false;
+    realmControls();
+  }
+}
+
+function showRealmProfile() {
+  showPanel('saved-step');
+  byId('title').textContent = '我的角色';
+  status('');
+}
+
+byId('open-realm').addEventListener('click', () => {
+  showPanel('realm-panel');
+  byId('title').textContent = '境界';
+  status('');
+  realmMessage('正在读取境界……');
+  readRealm();
+});
+byId('retry-realm-entry').addEventListener('click', readRealm);
+byId('retry-realm').addEventListener('click', readRealm);
+byId('back-realm').addEventListener('click', showRealmProfile);

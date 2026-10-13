@@ -1,6 +1,6 @@
 # 本地基础接口与运行说明
 
-本文件定义的是自建本地存档服务，不是原版接口协议。当前实现包含健康检查、两个截图参考外观标识、单角色姓名/外观存档、只读武学参考目录及 `client/` 静态文件服务，不代表原版创角或完整游戏已复刻。
+本文件定义的是自建本地存档服务，不是原版接口协议。当前实现包含健康检查、两个截图参考外观标识、单角色姓名/外观存档、只读武学参考目录、已取证武学检查点操作、显式境界训练检查点及 `client/` 静态文件服务，不代表原版创角或完整游戏已复刻。
 
 ## 运行
 
@@ -281,3 +281,88 @@ npm.cmd start
 未知 ID、字段缺失/额外字段、错误结构为 400 `invalid_martial_skill`；JSON/媒体类型/正文限额与其他 JSON 接口一致。单技能检查点返回 409 `martial_action_not_observed`，绑定冲突及无检查点保留原错误，失败不写档。旧布尔双技能存档依然 GET 零写兼容，初始顺序不丢失。
 
 开发回归现为 **34/34 通过**。新增覆盖两种手动输入顺序、两方向空洞补位、反序卸下/一键恢复、重复请求不写、反序及仅入悟槽2真实进程重启、落盘失败及恢复、非法 ID/角色冲突、旧布尔档和单技能边界。独立 QA 与内部浏览器点击验收另行记录。
+## 境界训练检查点
+
+境界采用自建本地接口，不是已取得的原版协议。普通角色默认没有境界检查点，也不会自动获得江湖阅历。开启范围仅为已观察的“初入江湖、训练前120阅历、试招/站桩/拉练均0次、本境界属性10/5/1000”样本。
+
+### 环境与启动
+
+先按正常流程创建本地角色并停止该服务，再指定同一角色文件启动：
+
+```powershell
+$env:CHARACTER_SAVE_FILE = 'D:\work\hd\game-zizaijianghu\.local\realm-qa-character.json'
+$env:REALM_CHECKPOINT = 'observed-before-training'
+$env:PORT = '3006'
+npm.cmd start
+```
+
+角色文件必须已存在。默认境界存档为角色文件路径追加 `.realm.json`；可使用 `REALM_SAVE_FILE` 指定独立绝对路径。境界文件不能与角色或武学文件共用路径。一次仅允许一个进程使用同一组存档。
+
+初始化仅发生于显式配置启动且境界文件不存在时。已有境界存档不因配置重置，后续不设置 `REALM_CHECKPOINT` 仍可读取；GET 不建档或补资源。无角色、未知检查点或损坏存档会使相应初始化失败，不覆盖为新状态。角色 `{name,appearanceId}` 与武学存档保持原格式，不被训练请求改写。
+
+### 读取与训练
+
+`GET /api/realm-state` 返回 200 `{state:...}`。显式初始状态为：
+
+```json
+{
+  "state": {
+    "kind":"local-realm-checkpoint",
+    "checkpoint":"observed-before-training",
+    "revision":0,
+    "resource":{"id":"jianghu-experience","name":"江湖阅历","amount":120},
+    "realm":{
+      "id":"initial-reference","name":"初入江湖",
+      "progress":{"current":0,"target":30},
+      "attributes":{"attack":10,"defense":5,"health":1000}
+    },
+    "training":[
+      {"id":"trial","name":"试招","limit":10,"cost":12,"attribute":"attack","gain":2,"count":0},
+      {"id":"stance","name":"站桩","limit":10,"cost":12,"attribute":"defense","gain":1,"count":0},
+      {"id":"run","name":"拉练","limit":10,"cost":12,"attribute":"health","gain":100,"count":0}
+    ],
+    "task":{"id":"train10-reference","label":"累计修炼10次","current":0,"target":10,"completed":false}
+  }
+}
+```
+
+属性是本境界展示值，不是角色总战斗属性或战力。`gain` 是当前初入江湖样本的单次属性增量，不能推广到其他境界。资源名称“江湖阅历”有原版提示依据，本地 ID 为项目自定义。
+
+`POST /api/realm-state/train` 声明 `Content-Type: application/json`，正文恰好为：
+
+```json
+{"training":"trial","expectedRevision":0}
+```
+
+`training` 仅允许 trial、stance、run，`expectedRevision` 为 GET 或前次成功响应中的非负安全整数版本号。成功返回 200 完整 `{state:...}`：扣12阅历，对应次数加1、本境界属性分别加2/1/100、累计成功修炼次数加1、revision加1。三类各以10次为上限，进度为三类次数之和，分母30。
+
+任务固定为 `train10-reference`。累计次数落盘，显示进度最多10/10，达到10次后 completed=true；继续训练不领取奖励、不切换20次或30次任务、不推进剧情。没有突破、自然资源到账、资源补充、长按批量或装备接口。默认120阅历最多完成10次训练；全30次的边界测试使用明确标识的人工隔离fixture，不是游戏奖励机制。
+
+### 事务、版本与失败
+
+境界单个文件保存绑定角色、checkpoint、revision、experience、counts、attributes及totalTraining。训练在同一串行队列内检查状态并构造完整快照，经临时文件原子替换成功后才更新内存；阅历、次数、属性和累计任务不会跨文件各自提交。写入失败时不提前扣费、加点或增加revision。
+
+版本号是本地并发控制契约，不是原版协议。同一 expectedRevision 的并发请求至多一个成功。成功请求再次携旧版本发送会冲突，不是再次训练。响应丢失或版本冲突时应重新 GET 核对结果，再由用户决定下一次操作，不自动重发扣费请求。
+
+| 状态 / error | 含义 |
+| --- | --- |
+| 404 character_not_found | 无本地角色 |
+| 404 realm_checkpoint_not_initialized | 普通角色尚未显式开启境界检查点 |
+| 409 realm_checkpoint_character_mismatch | 当前姓名/外观与境界文件绑定不符；不重置或迁移进度 |
+| 409 realm_revision_conflict | 请求版本不是当前版本 |
+| 409 realm_training_at_limit | 对应训练已10次 |
+| 409 realm_experience_insufficient | 江湖阅历不足12 |
+| 400 invalid_realm_training | 训练类型、版本号或正文结构不符，包含额外/缺失字段 |
+| 400 invalid_json | 无法解析 JSON |
+| 415 json_required | 未声明 JSON 媒体类型 |
+| 413 body_too_large | 请求超过本地16 KiB限额 |
+| 405 method_not_allowed | 状态路径非GET或训练路径非POST |
+| 500 local_operation_failed | 本地持久化等操作失败 |
+
+以上拒绝不改变训练状态。版本冲突、次数上限、余额不足的本地检查顺序依次如此，不宣称原版同条件提示优先级已取证。
+
+### 验证范围
+
+本次服务端开发回归 **42/42通过**，其中境界8项覆盖普通角色零初始化、整笔状态事务、并发版本防重、三类上限、落盘失败恢复、真实进程重启、非法输入/绑定、损坏文件与路径冲突。独立HTTP QA **8/8通过**，详见 [境界独立QA](realm-qa.md)。
+
+主会话已报告本轮页面范围验收通过；独立HTTP报告的页面栏记录的是该QA代理自身未执行浏览器，不能将开发或HTTP结果冒充页面证据。当前结论仅覆盖本地训练检查点，不代表完整境界成长、突破、资源获取或整款游戏完成。

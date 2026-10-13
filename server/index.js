@@ -9,6 +9,8 @@ const server = await createApp({
   saveFile, clientDirectory: resolve(root, 'client'),
   martialSaveFile: resolve(process.env.MARTIAL_SAVE_FILE ?? (saveFile + '.martial.json')),
   martialCheckpoint: process.env.MARTIAL_CHECKPOINT,
+  realmSaveFile: resolve(process.env.REALM_SAVE_FILE ?? (saveFile + '.realm.json')),
+  realmCheckpoint: process.env.REALM_CHECKPOINT,
 });
 server.listen(port, '127.0.0.1', () => {
   console.log(`Local foundation: http://127.0.0.1:${server.address().port}`);

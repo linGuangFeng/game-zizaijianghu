@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { createRealmStore, RealmStateError, realmTraining } from './realm-store.js';
 import { martialCatalog } from './martial-catalog.js';
 import { createMartialStore, MartialStateError } from './martial-store.js';
 import { readFile, realpath, stat } from 'node:fs/promises';
@@ -65,10 +66,12 @@ async function serveStatic(request, response, pathname, clientDirectory) {
   }
 }
 
-export async function createApp({ saveFile, clientDirectory, martialSaveFile = `${saveFile}.martial.json`, martialCheckpoint }) {
+export async function createApp({ saveFile, clientDirectory, martialSaveFile = `${saveFile}.martial.json`, martialCheckpoint, realmSaveFile = `${saveFile}.realm.json`, realmCheckpoint }) {
   if (resolve(martialSaveFile) === resolve(saveFile)) throw new Error('Martial and character saves must use separate files.');
+  if ([resolve(saveFile), resolve(martialSaveFile)].includes(resolve(realmSaveFile))) throw new Error('Realm save must use a separate file.');
   const store = await createCharacterStore(saveFile);
   const martialStore = await createMartialStore({ file: martialSaveFile, checkpoint: martialCheckpoint, character: store.get() });
+  const realmStore = await createRealmStore({ file: realmSaveFile, checkpoint: realmCheckpoint, character: store.get() });
   const clientRoot = resolve(clientDirectory);
   return createServer(async (request, response) => {
     try {
@@ -113,6 +116,21 @@ export async function createApp({ saveFile, clientDirectory, martialSaveFile = `
         }
         return json(response, 200, { state: await martialStore.equipSkill(body.skillId, () => store.get()) });
       }
+      if (pathname === '/api/realm-state') {
+        return request.method === 'GET'
+          ? json(response, 200, { state: realmStore.get(store.get()) })
+          : json(response, 405, { error: 'method_not_allowed' });
+      }
+      if (pathname === '/api/realm-state/train') {
+        if (request.method !== 'POST') return json(response, 405, { error: 'method_not_allowed' });
+        const body = await readJson(request);
+        if (body === null || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).length !== 2
+          || !realmTraining.some((training) => training.id === body.training)
+          || !Number.isSafeInteger(body.expectedRevision) || body.expectedRevision < 0) {
+          return json(response, 400, { error: 'invalid_realm_training' });
+        }
+        return json(response, 200, { state: await realmStore.train(body.training, body.expectedRevision, () => store.get()) });
+      }
       if (pathname === '/api/character') {
         if (request.method === 'GET') {
           const character = store.get();
@@ -130,7 +148,7 @@ export async function createApp({ saveFile, clientDirectory, martialSaveFile = `
       if (pathname.startsWith('/api/')) return json(response, 404, { error: 'not_found' });
       return await serveStatic(request, response, pathname, clientRoot);
     } catch (error) {
-      if (error instanceof MartialStateError || error instanceof RequestBodyError) return json(response, error.statusCode, { error: error.errorCode });
+      if (error instanceof MartialStateError || error instanceof RealmStateError || error instanceof RequestBodyError) return json(response, error.statusCode, { error: error.errorCode });
       if (!response.headersSent) json(response, 500, { error: 'local_operation_failed' });
       else response.destroy();
     }

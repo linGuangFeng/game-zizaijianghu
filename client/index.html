@@ -34,7 +34,19 @@
     </section>
     <section id="saved-step" hidden aria-labelledby="saved-title">
       <h2 id="saved-title">我的角色</h2>
-      <dl><div><dt>角色名称</dt><dd id="saved-name"></dd></div><div><dt>性别</dt><dd id="saved-appearance"></dd></div></dl><button id="open-martial" class="primary" type="button">武学图鉴</button><button id="back-jianghu" class="secondary" type="button">返回江湖</button>
+      <dl><div><dt>角色名称</dt><dd id="saved-name"></dd></div><div><dt>性别</dt><dd id="saved-appearance"></dd></div></dl><button id="open-realm" class="primary" type="button" hidden>境界</button><p id="realm-entry-message" class="status" role="status"></p><button id="retry-realm-entry" class="secondary" type="button" hidden>重新读取境界</button><button id="open-martial" class="primary" type="button">武学图鉴</button><button id="back-jianghu" class="secondary" type="button">返回江湖</button>
+    </section>
+    <section id="realm-panel" hidden aria-labelledby="realm-name">
+      <p id="realm-resource"></p>
+      <div class="realm-seat" aria-hidden="true">修炼</div>
+      <h2 id="realm-name"></h2>
+      <p id="realm-progress"></p>
+      <dl id="realm-attributes"></dl>
+      <div id="realm-training" class="realm-training"></div>
+      <p id="realm-task" class="equipment-task"></p>
+      <p id="realm-message" class="status" role="status" aria-live="polite"></p>
+      <button id="retry-realm" class="secondary" type="button" hidden>重新读取境界</button>
+      <button id="back-realm" class="secondary" type="button">返回角色</button>
     </section>
     <section id="equipment-panel" hidden aria-labelledby="equipment-title">
       <div class="equipment-heading"><h2 id="equipment-title">武学</h2><button id="edit-equipment" class="secondary" type="button" aria-pressed="false">编辑</button></div>
