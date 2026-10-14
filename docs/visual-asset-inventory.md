@@ -76,3 +76,5 @@ VA-13 的部分结构现在有实现；VA-14 的书册和技能图标仍缺，�
 九品前期：第一至第三重共用已证布局，新增progress绑定真实current/target，标题/属性/三卡局部排版；原人物/圆台/图标仍缺，UI NOT_RUN。详见 docs/ninth-visual-qa.md。
 
 首日测试商品：参考first-offer-stable的暖金框和权益横排；人物、技能预览和奖励图标缺失，只有首日文字权益和本地测试购买/领取。recharge-offers实际为江湖场景，不作商品参考。UI NOT_RUN，见 docs/commerce-visual-qa.md。
+
+上勾拳玩家养成：纸框、当前等级及属性双列、材料与升级区局部布局完成；真实growth未改。预览空域不代表技能演示，原书图/素材/遮罩仍缺。UI NOT_RUN，见 docs/uppercut-visual-qa.md。

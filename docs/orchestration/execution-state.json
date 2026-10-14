@@ -1,11 +1,11 @@
 {
   "projectComplete": false,
-  "activeWork": "首日商品局部布局已验收，独立17/17和五hash核同；本轮提交推送收口",
+  "activeWork": "上勾拳详情布局同轮QA收口，独立13/13和五当前hash核同；本轮提交推送",
   "lastFailure": "九品QA模型容量失败已即时通知监听；同代理单次恢复实际读取/看图后独立20/20成功，保留原错误，非网络或测试失败。",
   "userPaused": false,
-  "nextAction": "上勾拳玩家养成详情：client已实际view升级before/after/材料图并核growth投影；主先核图和调用后仅paper框/等级/属性/材料/按钮布局，不改图鉴/升星/未知下一档/技能动画。",
+  "nextAction": "材料信息弹层：event6材料补证与原图已核；读取现growth.material名称数量，null显示未确认，来源藏经阁只文字。支持空白处关闭及本地无障碍关闭，不加前往/授予/API；读写开始关闭防旧数据，具体先核调用再实施及逻辑回归。",
   "status": "HANDOFF_READY",
-  "updatedAt": "2026-10-14T07:40:09.3467807Z",
+  "updatedAt": "2026-10-14T07:46:25.1082359Z",
   "agents": [
     {
       "state": "COMPLETE",
