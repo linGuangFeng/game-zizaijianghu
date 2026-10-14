@@ -164,15 +164,38 @@ dd { margin: 0; overflow-wrap: anywhere; }
 #gear-panel .gear-navigation { min-height: 80px; display: flex; align-items: end; padding: 12px 18px; background: #746744; border-top: 2px solid #c1ae78; }
 #back-gear { min-height: 44px; padding: 8px 16px; color: #f2e7c7; background: #8d784e; border: 2px solid #c4b582; border-radius: 22px 22px 6px 6px; font: 15px serif; }
 #open-breakthrough { margin-top: 18px; }
-#breakthrough-panel { margin-top: 18px; }
-#breakthrough-realm { text-align: center; }
-#breakthrough-panel dl { font-size: 14px; }
-#breakthrough-conditions { display: grid; gap: 12px; margin-top: 20px; }
-.breakthrough-condition { border: 1px solid #b8a77c; background: #e9dfc6; display: grid; grid-template-columns: 1fr auto; padding: 14px; gap: 12px; font-size: 14px; align-items: center; }
-#breakthrough-panel > button { width: 100%; margin-top: 12px; }
-#breakthrough-reward, #breakthrough-result { border: 1px solid #b8a77c; background: #e3e9df; padding: 16px; margin-top: 18px; }
-#breakthrough-reward h3, #breakthrough-result h3 { margin-top: 0; font-size: 18px; }
-
+/* First breakthrough only: observed conditions, inline reward and result. */
+.game-shell:has(> #breakthrough-panel:not([hidden])) { position: relative; width: min(100%, 405px); padding: 0; border: 0; background: #a9956c; }
+.game-shell:has(> #breakthrough-panel:not([hidden])) > header { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.game-shell:has(> #breakthrough-panel:not([hidden])) > #status { position: absolute; z-index: 3; top: 20px; left: 4%; width: 92%; min-height: 0; margin: 0; font-size: 12px; }
+.game-shell:has(> #breakthrough-panel:not([hidden])) > #status:empty { display: none; }
+#breakthrough-panel { min-height: 720px; margin: 0; padding: 0 0 12px; color: #f5e7c8; background: linear-gradient(#b4b7ac, #ad9c78 342px, #aa9265); }
+#breakthrough-panel .realm-seat { height: 342px; min-height: 0; margin: 0; background: #b4b7ac; }
+#breakthrough-realm { height: 28px; margin: 0; padding: 4px; text-align: center; font: 18px serif; color: #fff3d4; background: #7f71574d; }
+#breakthrough-attributes { margin: 0 13%; font: 13px serif; }
+#breakthrough-attributes div { height: 28px; padding: 6px 0; border: 0; }
+#breakthrough-attributes dt { color: inherit; }
+#breakthrough-conditions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 27px 7% 0; }
+#breakthrough-panel .breakthrough-condition { min-width: 0; height: 139px; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: 24px 74px 12px 27px; gap: 0; border: 1px solid #8e7449; background: #d5c39c; font-size: 12px; text-align: center; }
+#breakthrough-panel .breakthrough-condition strong { padding: 5px 0; background: #9c7d4e; color: #f7eacb; font: 11px serif; }
+#breakthrough-panel .breakthrough-condition > span:nth-of-type(1) { display: grid; place-items: center; margin: 9px 10px; border: 1px solid #b8a077; color: #715732; background: #decca7; font-size: 12px; }
+#breakthrough-panel .breakthrough-condition > span:nth-of-type(2) { margin-inline: 8px; background: #e7cd79; color: #655734; font: 11px/12px serif; }
+#breakthrough-panel .breakthrough-condition button { min-height: 0; padding: 4px 0; border: 0; border-top: 1px solid #b09255; border-radius: 0; color: #594424; background: #e4be69; font: 13px serif; }
+#breakthrough-panel .breakthrough-condition button[data-claimed="true"] { background: #b7a681; color: #5d6146; }
+#breakthrough-reward, #breakthrough-result { margin: 18px 7% 0; padding: 18px; border-block: 2px solid #cfb97a; background: linear-gradient(110deg, #675934, #8e7b48, #675934); color: #f4ecd5; }
+#breakthrough-reward h3, #breakthrough-result h3 { margin: 0 0 18px; font: 28px serif; text-align: center; color: #ffe7a1; }
+#breakthrough-reward-text { width: fit-content; margin: 12px auto 18px; padding: 18px; border: 1px solid #c6a369; background: #af8950; color: #fff2c7; }
+#close-breakthrough-reward { display: block; min-height: 36px; margin: 0 auto; padding: 6px 18px; color: #f7edcf; background: #827148; border-color: #c7b17b; }
+#breakthrough-result > p { text-align: center; color: #b5df9c; font: 16px serif; }
+#breakthrough-result dl { font-size: 13px; }
+#breakthrough-result dl div { padding: 7px 0; border: 0; }
+#breakthrough-result dt { color: #e9dfc5; }
+#breakthrough-result dd { color: #b5df9c; }
+#breakthrough-message { min-height: 0; margin: 12px 7% 0; font-size: 12px; color: #493c28; }
+#breakthrough-message:empty { display: none; }
+#breakthrough-panel .breakthrough-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 14px 7% 0; }
+#breakthrough-panel .breakthrough-actions button { min-height: 40px; width: auto; padding: 8px 14px; color: #f5e9c6; background: #877144; border: 1px solid #d8c18b; font: 15px serif; }
+#breakthrough-panel #advance-breakthrough { background: #b78942; color: #fff0c4; }
 /* Jianghu-only layout: 405 x 720 reference stage, locally drawn scenery. */
 .game-shell.is-jianghu { position: relative; align-self: flex-start; width: min(100%, 405px); aspect-ratio: 405 / 720; min-height: 0; padding: 0; border: 0; overflow: hidden; background: #dce6e5; }
 .is-jianghu > header { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); }
