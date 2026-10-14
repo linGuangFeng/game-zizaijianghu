@@ -125,13 +125,44 @@ dd { margin: 0; overflow-wrap: anywhere; }
 #realm-panel #realm-message:empty { display: none; }
 #realm-panel > button { margin: 8px 0 0; color: #f8eccb; background: #806d48; border-color: #d4be8b; }
 #open-gear { margin-top: 18px; }
-#gear-panel { margin-top: 20px; }
-#gear-panel > button, #change-gear { width: 100%; margin-top: 12px; }
-#gear-panel h3 { font-size: 16px; margin-top: 22px; }
-#gear-panel dl { font-size: 14px; }
-#gear-detail, #gear-candidates-panel { border-top: 1px solid #b8a77c; margin-top: 18px; }
-.gear-candidate { padding: 14px; margin-block: 12px; display: grid; gap: 12px; border: 1px solid #b8a77c; background: #e9dfc6; font-size: 14px; }
-
+/* Gear reference layout: one observed blade, with inline detail and selection. */
+.game-shell:has(> #gear-panel:not([hidden])) { position: relative; width: min(100%, 405px); padding: 0; border: 0; background: #b3a47e; }
+.game-shell:has(> #gear-panel:not([hidden])) > header { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.game-shell:has(> #gear-panel:not([hidden])) > #status { position: absolute; z-index: 3; top: 58px; left: 4%; width: 92%; min-height: 0; margin: 0; font-size: 12px; }
+.game-shell:has(> #gear-panel:not([hidden])) > #status:empty { display: none; }
+#gear-panel { min-height: 720px; margin: 0; padding: 0; color: #f2e5c5; background: linear-gradient(#aeb3ac, #b4aa8d 440px, #aa966b); }
+#gear-panel .gear-overview { position: relative; height: 540px; }
+#gear-title { margin: 0; padding: 20px; font: 24px serif; color: #4e503f; border-bottom: 1px solid #989d8b; }
+#gear-equipped { position: absolute; top: 350px; right: 3%; width: 100px; min-height: 78px; margin: 0; padding: 8px; justify-content: center; text-align: center; font-size: 12px; line-height: 1.5; color: #514732; background: #e1d5b599; border: 2px solid #e4d5ae; }
+#gear-panel .gear-summary { position: absolute; top: 444px; left: 0; width: 100%; }
+#gear-panel .gear-summary h3 { height: 26px; margin: 0; padding: 5px; text-align: center; font: 16px serif; color: #fff3d2; background: #786e5366; }
+#gear-panel #gear-attributes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0 5%; font: 12px serif; }
+#gear-panel #gear-attributes div { justify-content: flex-start; gap: 12px; padding: 6px 0; border: 0; }
+#gear-panel #gear-attributes dt { min-width: 4em; color: inherit; }
+#gear-panel #gear-attributes div:nth-child(1) { grid-area: 1 / 2; }
+#gear-panel #gear-attributes div:nth-child(2) { grid-area: 2 / 1; }
+#gear-panel #gear-attributes div:nth-child(3) { grid-area: 1 / 1; }
+#gear-panel #gear-attributes div:nth-child(4) { grid-area: 2 / 2; }
+#gear-detail { width: min(90%, 290px); margin: 12px auto; padding: 0 18px 18px; border: 2px solid #a4864d; background: linear-gradient(#a16b2f, #514d3e 110px, #3f4038); color: #eee7d3; }
+#gear-detail-title { margin: 0 -18px 10px; padding: 16px; font: 18px serif; text-align: center; color: #f5c361; border-bottom: 1px solid #b58c4c; }
+#gear-item-attributes { font-size: 12px; }
+#gear-item-attributes div { justify-content: flex-start; gap: 12px; padding: 5px 0; border: 0; }
+#gear-item-attributes dt { color: #d3cdb9; min-width: 4em; }
+#gear-panel #change-gear { display: block; width: auto; min-height: 34px; margin: 16px auto 0; padding: 6px 18px; border-color: #adc4b6; background: #50827e; color: #f0f0dd; }
+#gear-candidates-panel { margin: 18px 4%; padding: 0 10px 20px; border: 5px double #8aab9d; background: #d2cfc2; color: #5f5848; }
+#gear-candidates-title { margin: 0 -10px 10px; padding: 10px; background: #557e78; color: #f0ead5; font: 21px serif; text-align: center; }
+#gear-panel .gear-candidate { min-width: 0; min-height: 80px; padding: 8px; margin: 6px 0; display: grid; grid-template-columns: 54px minmax(0, 1fr) 58px; grid-template-rows: auto auto; gap: 5px 8px; align-items: center; border: 3px double #aaa692; background: #e0ded0; font-size: 12px; }
+#gear-panel .gear-candidate::before { content: ''; grid-area: 1 / 1 / 3 / 2; aspect-ratio: 1; border: 1px solid #a8a18b; background: #c9c3ae; }
+#gear-panel .gear-candidate strong { grid-area: 1 / 2; font-size: 13px; font-weight: 400; overflow-wrap: anywhere; }
+#gear-panel .gear-candidate > span { grid-area: 2 / 2; font-size: 11px; }
+#gear-panel .gear-candidate button { grid-area: 1 / 3 / 3 / 4; min-height: 32px; padding: 4px 2px; border-color: #b19860; background: #c9ad68; color: #fff6df; font-size: 12px; }
+#gear-panel .gear-candidate button[data-equipped="true"] { color: #527351; background: #e0dfcb; border: 1px solid #7c9977; opacity: 1; }
+#gear-panel .gear-actions { min-height: 100px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-around; gap: 8px; padding: 14px 10%; }
+#gear-message { width: 100%; min-height: 0; margin: 0; color: #514732; font-size: 12px; }
+#gear-message:empty { display: none; }
+#gear-panel .gear-actions button { min-height: 34px; width: auto; padding: 6px 14px; color: #f0f3df; background: #508c8b; border: 1px solid #a0c4b8; font: 15px serif; }
+#gear-panel .gear-navigation { min-height: 80px; display: flex; align-items: end; padding: 12px 18px; background: #746744; border-top: 2px solid #c1ae78; }
+#back-gear { min-height: 44px; padding: 8px 16px; color: #f2e7c7; background: #8d784e; border: 2px solid #c4b582; border-radius: 22px 22px 6px 6px; font: 15px serif; }
 #open-breakthrough { margin-top: 18px; }
 #breakthrough-panel { margin-top: 18px; }
 #breakthrough-realm { text-align: center; }

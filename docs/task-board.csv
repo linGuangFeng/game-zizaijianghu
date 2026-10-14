@@ -43,3 +43,4 @@
 "GEAR-UNIFIED","装备显式并入统一主存档","服务端/QA及主会话","PARTIAL_VERIFIED","ASSETS-MARTIAL和GEAR-BLADE","docs/gear-assets-qa.md","开发113项通过，独立HTTP/CLI9项通过；迁后页面NOT_RUN，不默认发装备或新增检查点"
 "MARTIAL-VISUAL-LAYOUT","武学纸色六槽四列卡片布局","客户端/QA及主会话","PARTIAL_VERIFIED","MARTIAL-THREE-LIMITED","docs/martial-visual-qa.md","现图静态基准及最终12脚本回归通过；原图标素材仍缺，页面NOT_RUN非视觉1比1"
 "REALM-VISUAL-LAYOUT","初入江湖布局与真实进度条","客户端/架构/QA及主会话","PARTIAL_VERIFIED","REALM-TRAIN","docs/realm-visual-qa.md","真实HTTP及客户端逻辑16项复跑通过含4项境界；静态基准已核，页面NOT_RUN且缺人物地面图标"
+"GEAR-VISUAL-LAYOUT","装备属性详情和选择布局","客户端/架构/QA及主会话","PARTIAL_VERIFIED","GEAR-UNIFIED","docs/gear-visual-qa.md","静态三图与13项HTTP/CLI核过；内联详情仍不同原弹层，缺素材，UI NOT_RUN"
