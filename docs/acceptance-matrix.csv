@@ -46,3 +46,4 @@ LOCAL-MARTIAL-THREE,local-function,显式三本中槽卸下补回,既有checkpoi
 "LOCAL-GEAR-VISUAL","visual","装备两列属性与详情选择布局","原版装备三图仅借已证布局","现有HTTP/CLI13项通过及五文件hash核同","NOT_RUN：未进行页面点击","PARTIAL_VERIFIED","内联详情不同弹层且人物图标缺失","docs/gear-visual-qa.md"
 "LOCAL-FIRST-BREAKTHROUGH-VISUAL","visual","首次突破三条件卡和奖励结果布局","首次突破三原图及既有数据事件","17项HTTP/CLI及五hash核同","NOT_RUN：无页面点击","PARTIAL_VERIFIED","目标预览/遮罩/素材未还原","docs/first-breakthrough-visual-qa.md"
 "LOCAL-NINTH-VISUAL","visual","九品三阶段布局进度","九品三原图及真实progress字段","HTTP+VM20项与四hash核同","NOT_RUN：无页面点击","PARTIAL_VERIFIED","三重边界已验逻辑，素材与页面仍缺","docs/ninth-visual-qa.md"
+"LOCAL-COMMERCE-VISUAL","visual","首日商品权益购买布局","first-offer-stable原图及真实商品投影","17项HTTP/CLI与五hash核同","NOT_RUN：无页面点击","PARTIAL_VERIFIED","仅首日测试支付，原宣传素材与三日页未恢复","docs/commerce-visual-qa.md"

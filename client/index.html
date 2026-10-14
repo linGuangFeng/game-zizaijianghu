@@ -54,16 +54,18 @@
     <section id="commerce-panel" hidden aria-labelledby="commerce-title">
       <h2 id="commerce-title">本地测试充值</h2>
       <p class="test-payment-note">测试环境支付直接成功，不实际扣款。</p>
-      <h3 id="commerce-product-name"></h3><p id="commerce-price"></p>
-      <h3>首日奖励</h3><ul id="commerce-rewards"></ul>
-      <p class="reference-note">下方领取记录仅为本次奖励；可确认的新增资产另列，未知历史总量不作余额。荡剑式仍为领取权益，尚未接入可用武学。后两日领取及复购暂未开放。</p>
-      <section class="asset-summary" aria-label="角色资产"><h3>资产</h3><p class="asset-message status" role="status"></p><dl class="asset-accounts"></dl><ul class="asset-entries"></ul><button class="retry-assets secondary" type="button" hidden>重新读取资产</button></section>
+      <div class="commerce-offer">
+        <h3 id="commerce-product-name"></h3><div class="commerce-art-space" aria-hidden="true"></div>
+        <div class="commerce-first-day"><h3>首日奖励</h3><ul id="commerce-rewards"></ul></div>
+        <p id="commerce-price"></p>
+        <div class="commerce-actions"><button id="commerce-purchase" class="primary" type="button" disabled>测试购买 ¥6</button><button id="commerce-claim" class="primary" type="button" hidden disabled>领取首日奖励</button></div>
+      </div>
       <p id="commerce-order-status"></p>
-      <button id="commerce-purchase" class="primary" type="button" disabled>测试购买 ¥6</button>
-      <button id="commerce-claim" class="primary" type="button" hidden disabled>领取首日奖励</button>
-      <section id="commerce-grants-section" hidden aria-labelledby="commerce-grants-title"><h3 id="commerce-grants-title">本次领取记录</h3><ul id="commerce-grants"></ul></section>
       <p id="commerce-message" class="status" role="status" aria-live="polite"></p>
       <button id="retry-commerce" class="secondary" type="button" hidden>重新读取订单</button>
+      <p class="reference-note">下方领取记录仅为本次奖励；可确认的新增资产另列，未知历史总量不作余额。荡剑式仍为领取权益，尚未接入可用武学。后两日领取及复购暂未开放。</p>
+      <section id="commerce-grants-section" hidden aria-labelledby="commerce-grants-title"><h3 id="commerce-grants-title">本次领取记录</h3><ul id="commerce-grants"></ul></section>
+      <section class="asset-summary" aria-label="角色资产"><h3>资产</h3><p class="asset-message status" role="status"></p><dl class="asset-accounts"></dl><ul class="asset-entries"></ul><button class="retry-assets secondary" type="button" hidden>重新读取资产</button></section>
       <button id="back-commerce" class="secondary" type="button">返回角色</button>
     </section>
     <section id="breakthrough-panel" hidden aria-labelledby="breakthrough-realm">

@@ -46,3 +46,4 @@
 "GEAR-VISUAL-LAYOUT","装备属性详情和选择布局","客户端/架构/QA及主会话","PARTIAL_VERIFIED","GEAR-UNIFIED","docs/gear-visual-qa.md","静态三图与13项HTTP/CLI核过；内联详情仍不同原弹层，缺素材，UI NOT_RUN"
 "FIRST-BREAKTHROUGH-VISUAL","首次突破条件奖励结果布局","客户端/架构/QA及主会话","PARTIAL_VERIFIED","ASSETS-FIRST-BREAKTHROUGH","docs/first-breakthrough-visual-qa.md","17项HTTP/CLI通过；内联非遮罩，无目标预览及素材，UI NOT_RUN"
 "NINTH-VISUAL-LAYOUT","九品三重布局与真实进度条","客户端/架构/QA及主会话","PARTIAL_VERIFIED","REALM-THIRD-STAGE","docs/ninth-visual-qa.md","专项20项独立复跑含4九品跨阶段瓶颈恢复通过；缺人物图标，UI NOT_RUN"
+"COMMERCE-VISUAL-LAYOUT","首日测试购买局部布局","客户端/架构/QA及主会话","PARTIAL_VERIFIED","PAY-FIRST-DAY","docs/commerce-visual-qa.md","现有17项HTTP/CLI独立通过；无后两日/人物图/原遮罩，UI NOT_RUN"

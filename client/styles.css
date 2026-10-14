@@ -251,14 +251,35 @@ dd { margin: 0; overflow-wrap: anywhere; }
 #ninth-training-panel #ninth-message:empty { display: none; }
 #ninth-training-panel > button { margin: 8px 0 0; color: #f8eccb; background: #806d48; border-color: #d4be8b; }
 #open-test-commerce { margin-top: 18px; }
-#commerce-panel { margin-top: 24px; }
-#commerce-panel > button { width: 100%; margin-top: 12px; }
-.test-payment-note { padding: 14px; border: 1px solid #9b8254; background: #eee4c9; color: #514126; line-height: 1.6; }
-#commerce-price { font-size: 26px; color: #7d5c2e; }
-#commerce-rewards, #commerce-grants { padding-left: 22px; line-height: 1.9; }
-#commerce-grants-section { margin-top: 18px; padding: 14px; background: #e3e9df; }
-#commerce-grants-section h3 { margin-top: 0; }
-
+/* Only the observed first-day offer is presented; no promotional art assets. */
+.game-shell:has(> #commerce-panel:not([hidden])) { position: relative; width: min(100%, 405px); padding: 0; border: 0; background: #a48249; }
+.game-shell:has(> #commerce-panel:not([hidden])) > header { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.game-shell:has(> #commerce-panel:not([hidden])) > #status { margin: 0; padding: 8px 16px; color: #f7ecd2; font-size: 12px; }
+.game-shell:has(> #commerce-panel:not([hidden])) > #status:empty { display: none; }
+#commerce-panel { min-height: 720px; margin: 0; padding: 20px 18px; color: #55422a; background: linear-gradient(#b79b61, #e2c88a 560px, #d4bd90); }
+#commerce-title { margin: 0 0 10px; font: 19px serif; text-align: center; color: #fff0c3; }
+#commerce-panel .test-payment-note { margin: 0 0 16px; padding: 10px; border: 1px solid #90733c; background: #f4e4ba; color: #514126; font-size: 13px; line-height: 1.6; text-align: center; }
+#commerce-panel .commerce-offer { border: 4px double #d3b064; background: #b5986266; }
+#commerce-product-name { margin: 0; padding: 18px 10px; text-align: center; color: #fff0b8; font: 23px serif; }
+#commerce-panel .commerce-art-space { height: 220px; margin: 0 12px 16px; background: #b9a47a; }
+#commerce-panel .commerce-first-day { margin: 0 8px; border: 3px double #b99c56; background: #edcf87; }
+#commerce-panel .commerce-first-day h3 { margin: 0; padding: 7px; border-bottom: 1px solid #bca365; color: #70562e; font: 15px serif; text-align: center; }
+#commerce-rewards { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 10px 8px; }
+#commerce-rewards li { min-width: 0; min-height: 64px; display: grid; place-items: center; padding: 8px 3px; border: 1px solid #b7a170; background: #e4d1a3; color: #66502e; font-size: 12px; text-align: center; overflow-wrap: anywhere; }
+#commerce-price { margin: 14px 0 8px; text-align: center; font: 25px serif; color: #fff0bc; }
+#commerce-panel .commerce-actions { padding: 0 14% 16px; }
+#commerce-panel .commerce-actions button { width: 100%; min-height: 42px; padding: 7px; border: 3px double #f2d987; border-radius: 4px; background: linear-gradient(#ac7c31, #e6c465); color: #fff5d3; font: 16px serif; }
+#commerce-panel .commerce-actions button:disabled { color: #594b30; }
+#commerce-order-status { margin: 16px 0 8px; font-size: 13px; text-align: center; }
+#commerce-message { min-height: 0; margin: 0 0 10px; color: #6a3f22; font-size: 13px; }
+#commerce-message:empty { display: none; }
+#commerce-panel > .reference-note { color: #645338; font-size: 12px; line-height: 1.7; }
+#commerce-panel > button { width: 100%; margin-top: 12px; color: #594832; background: #e6d3a6; border-color: #a78c53; }
+#commerce-grants-section { margin-top: 18px; padding: 14px; background: #ede0bc; border: 1px solid #b09b6c; }
+#commerce-grants-section h3 { margin-top: 0; font-size: 15px; }
+#commerce-grants { padding-left: 20px; font-size: 13px; line-height: 1.9; }
+#commerce-panel .asset-summary { color: #584b32; border-color: #ac9768; background: #e4d6b5; }
+#commerce-panel .asset-summary dt, #commerce-panel .asset-message { color: #726247; }
 .asset-summary { margin-block: 18px; padding: 12px; border: 1px solid #b8c5b8; background: #e7ece2; }
 .asset-summary h3 { margin: 0 0 12px; font-size: 16px; }
 .asset-summary dl { font-size: 13px; }

@@ -74,3 +74,5 @@ VA-13 的部分结构现在有实现；VA-14 的书册和技能图标仍缺，�
 首次突破：三条件卡及当前属性布局、暖色内联奖励与结果框已实现；目标预览、原遮罩、人物与宝典令图仍缺，不是完整1:1。UI NOT_RUN，见 docs/first-breakthrough-visual-qa.md。
 
 九品前期：第一至第三重共用已证布局，新增progress绑定真实current/target，标题/属性/三卡局部排版；原人物/圆台/图标仍缺，UI NOT_RUN。详见 docs/ninth-visual-qa.md。
+
+首日测试商品：参考first-offer-stable的暖金框和权益横排；人物、技能预览和奖励图标缺失，只有首日文字权益和本地测试购买/领取。recharge-offers实际为江湖场景，不作商品参考。UI NOT_RUN，见 docs/commerce-visual-qa.md。
