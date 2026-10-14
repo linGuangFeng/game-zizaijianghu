@@ -125,14 +125,16 @@
       <button id="back-realm" class="secondary" type="button">返回角色</button>
     </section>
     <section id="equipment-panel" hidden aria-labelledby="equipment-title">
-      <div class="equipment-heading"><h2 id="equipment-title">武学</h2><button id="edit-equipment" class="secondary" type="button" aria-pressed="false">编辑</button></div>
-      <ol id="equipment-slots" class="equipment-slots" aria-label="武学槽位"></ol>
-      <p id="equipment-edit-hint" class="reference-note" hidden>点击槽位右上角可卸下武学</p><h3>已拥有</h3>
+      <div class="equipment-board">
+        <div class="equipment-heading"><h2 id="equipment-title">武学</h2><button id="edit-equipment" class="secondary" type="button" aria-pressed="false">编辑</button></div>
+        <p id="equipment-task" class="equipment-task" aria-live="polite"></p>
+        <ol id="equipment-slots" class="equipment-slots" aria-label="武学槽位"></ol>
+        <p id="equipment-edit-hint" class="reference-note" hidden>点击槽位右上角可卸下武学</p>
+      </div>
+      <h3>已拥有</h3>
       <div id="equipment-owned" class="equipment-owned"></div>
-      <p id="equipment-task" class="equipment-task" aria-live="polite"></p>
-      <button id="auto-equip" class="primary" type="button">一键装配</button>
-      <button id="retry-equipment" class="secondary" type="button" hidden>重新读取</button>
-      <button id="back-equipment" class="secondary" type="button">返回江湖</button>
+      <div class="equipment-actions"><button id="auto-equip" class="primary" type="button">一键装配</button><button id="retry-equipment" class="secondary" type="button" hidden>重新读取</button></div>
+      <div class="equipment-navigation"><button id="back-equipment" class="secondary" type="button">返回江湖</button></div>
     </section>
     <section id="player-martial-detail" hidden aria-labelledby="player-martial-title">
       <h2 id="player-martial-title">上勾拳 · 武学养成</h2>

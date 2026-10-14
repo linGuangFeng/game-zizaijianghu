@@ -17,16 +17,17 @@ export class GearStateError extends Error {
     this.errorCode = errorCode;
   }
 }
-export async function createGearStore({ file, checkpoint, character }) {
+export async function createGearStore({ file, checkpoint, character, storage }) {
   if (checkpoint !== undefined && checkpoint !== 'observed-event5-blade') throw new Error('Unknown local gear checkpoint.');
   let saved = null;
   try {
-    saved = JSON.parse(await readFile(file, 'utf8'));
+    saved = storage ? storage.load() : JSON.parse(await readFile(file, 'utf8'));
     if (saved?.checkpoint !== 'observed-event5-blade' || !isCharacter(saved.character)
       || !Number.isSafeInteger(saved.revision) || saved.revision < 0
       || !gearItems.some((item) => item.id === saved.equippedId)) throw new Error('Invalid local gear save.');
   } catch (error) { if (error.code !== 'ENOENT') throw error; }
   async function persist(next) {
+    if (storage) { await storage.persist(next); saved = next; return; }
     await mkdir(dirname(file), { recursive: true });
     const temporary = `${file}.${randomUUID()}.tmp`;
     try {
@@ -57,8 +58,14 @@ export async function createGearStore({ file, checkpoint, character }) {
     };
   }
   let queue = Promise.resolve();
+  function enqueue(action) {
+    if (storage) return storage.enqueue(action);
+    const operation = queue.then(action);
+    queue = operation.catch(() => {});
+    return operation;
+  }
   function equip(itemId, expectedRevision, getCharacter) {
-    const operation = queue.then(async () => {
+    const operation = enqueue(async () => {
       const character = getCharacter();
       const state = stateFor(character);
       if (saved.revision !== expectedRevision) throw new GearStateError(409, 'gear_revision_conflict');

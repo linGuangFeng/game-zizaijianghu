@@ -35,8 +35,10 @@ LOCAL-TEST-COMMERCE,local-function,固定¥6测试购买直接paid与独立首�
 "LOCAL-ASSETS-REALM","functional","显式迁移统一角色资产与境界消费","docs/local-api.md","独立CLI/HTTP10项PASS；开发82项通过","3013页面领取入账训练扣费双页冲突停服重读刷新PASS","PASS","本行历史assets与realm显式迁移；武学及首次新奖励后续另项已统一，装备未统一；无自然挂机公式或货币消费","docs/assets-realm-qa.md"
 "LOCAL-REALM-SECOND","functional","现有九品第二重训练至第三重展示","docs/train123-evidence.md","独立HTTP8项PASS与开发84项通过","3014页面三类训练54边界停服重读冲突刷新PASS","PASS","本行第二重历史局部通过；第三重后续已另项验收；人工余额非自然任务，不新增checkpoint","docs/second-stage-qa.md"
 "LOCAL-ASSETS-MARTIAL","functional","显式武学迁移与材料原子消费","docs/local-api.md","独立HTTP/CLI10项PASS开发89项通过","3015升级故障恢复冲突刷新跨境界及3016未知材料禁用PASS","PASS","仅上勾1至2及显式迁入域；首次突破新奖励后续另项统一但旧receipt不追溯；装备未统一，自然抽奖未实现","docs/martial-assets-qa.md"
-LOCAL-CONTINUE,local-function,江湖已有域继续入口,现有各域真实GET,独立HTTP7项通过,多域及未突破和绑定409页面补验通过,PARTIAL_VERIFIED,仅武学单域分流未验；无自然授予链；当前Browser不可用,docs/continue-entry-qa.md
+LOCAL-CONTINUE,local-function,江湖已有域继续入口,现有各域真实GET,独立HTTP7项通过,多域及未突破和绑定409页面补验通过,PARTIAL_VERIFIED,3003仅武学单域分流已补验；历史局部结果不代表自然授予链；当前Browser不可用,docs/continue-entry-qa.md
 LOCAL-REALM-THIRD,local-function,第三重66次与单项53瓶颈,原版第三重连续图,独立HTTP10项及开发91项通过,3017三卡瓶颈停服恢复末次冲突刷新账本通过,PASS,满66保持第三重；人工余额非自然任务；余额15仅HTTP；视觉未验,docs/third-stage-qa.md；docs/third-stage-evidence.md
 LOCAL-FIRST-REWARD,local-function,首次突破新receipt入统一资产,既有schema2已迁入realm,独立HTTP9项及开发94项通过,3018新领取5至15停服重读冲突刷新通过,PASS,旧历史不追溯仅HTTP已验；非第二次突破自然条件闭环,docs/realm-reward-assets-qa.md
 LOCAL-MARTIAL-THREE,local-function,显式三本中槽卸下补回,既有checkpoint人工threeSlots,独立HTTP10项及开发96项通过,NOT_RUN,PARTIAL_VERIFIED,Browser技能未列旧绑定失效；只满三槽和中空不默认授予；不得接口代替页面,docs/third-martial-qa.md
 "LOCAL-MARTIAL-CLIENT-RECOVERY","local-scope","武学未知结果锁写及图鉴响应隔离","已有本地持久化合同与锁槽截图","真实HTTP加客户端脚本12项开发及QA复跑通过","NOT_RUN：NodeVM最小DOM不替代内置Browser","PARTIAL_VERIFIED","待内置Browser恢复后页面点击；没有新增自然授予或解锁","docs/martial-client-recovery-qa.md"
+"LOCAL-GEAR-UNIFIED","local-function","装备显式统一存档","已有装备样本与本地主事务","独立HTTP/CLI9项通过","NOT_RUN","PARTIAL_VERIFIED","待迁后页面；无自然装备授予","docs/gear-assets-qa.md"
+"LOCAL-MARTIAL-VISUAL","visual","武学六槽与四列布局","原版单本及三槽截图","HTML关联检查和12项客户端逻辑回归通过","NOT_RUN：仅静态基准","PARTIAL_VERIFIED","独立美术缺口及页面比对未完成","docs/martial-visual-qa.md"

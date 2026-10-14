@@ -74,7 +74,7 @@ export async function createApp({ saveFile, clientDirectory, martialSaveFile = `
   const store = await createCharacterStore(saveFile);
   const martialStore = await createMartialStore({ file: martialSaveFile, checkpoint: martialCheckpoint, character: store.get(), storage: store.martialStorage() });
   const realmStore = await createRealmStore({ file: realmSaveFile, checkpoint: realmCheckpoint, character: store.get(), storage: store.realmStorage() });
-  const gearStore = await createGearStore({ file: gearSaveFile, checkpoint: gearCheckpoint, character: store.get() });
+  const gearStore = await createGearStore({ file: gearSaveFile, checkpoint: gearCheckpoint, character: store.get(), storage: store.gearStorage() });
   const clientRoot = resolve(clientDirectory);
   return createServer(async (request, response) => {
     try {
