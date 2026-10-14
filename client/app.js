@@ -557,6 +557,7 @@ function displayRealm(state) {
     const button = document.createElement('button');
     button.type = 'button';
     button.dataset.full = String(training.count >= training.limit);
+    button.dataset.insufficient = String(training.count < training.limit && state.resource.amount < training.cost);
     button.textContent = training.count >= training.limit ? '已达瓶颈' : `${state.resource.name} ${training.cost}`;
     button.setAttribute('aria-label', `${training.name}：${button.textContent}`);
     button.addEventListener('click', () => trainRealm(training.id));

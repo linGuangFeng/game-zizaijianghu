@@ -1,11 +1,11 @@
 {
   "projectComplete": false,
-  "activeWork": "材料弹层实现与独立26项验收收口，四hash核同；开发报告一次完整127项通过，本轮提交推送",
+  "activeWork": "成本标红同轮验收，独立4/4及三hash核同；自动不足弹层候选经三方核证撤回，本轮提交推送",
   "lastFailure": "九品QA模型容量失败已即时通知监听；同代理单次恢复实际读取/看图后独立20/20成功，保留原错误，非网络或测试失败。",
   "userPaused": false,
-  "nextAction": "初入江湖阅历不足说明候选：client已看不足/资源提示并核trainRealm不足分支；主已读realm-equipment-evidence资源不足节，下一轮先核触发证据与GET调用，读取真实amount后只读说明来源，不补资源产量/前往/充值或样本专属任务门槛。",
+  "nextAction": "只读图鉴详情局部排版候选：client已核original-martial-detail、martial-catalog/showMartialEntry和HTML，可仅纸框摘要/属性双列/天赋行；原图是养成弹层不是独立图鉴页，保留参考只读和缺文提示，不添升级或玩家材料。主先核证后实施。",
   "status": "HANDOFF_READY",
-  "updatedAt": "2026-10-14T07:56:13.7566025Z",
+  "updatedAt": "2026-10-14T08:05:24.2355196Z",
   "agents": [
     {
       "state": "COMPLETE",

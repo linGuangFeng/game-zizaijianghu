@@ -120,6 +120,7 @@ dd { margin: 0; overflow-wrap: anywhere; }
 #realm-panel .realm-training-card > span { grid-row: 3; padding: 5px 0; }
 #realm-panel .realm-training-card button { grid-row: 4; min-height: 0; padding: 3px 0; border: 0; border-top: 1px solid #b19967; border-radius: 0; background: #e5c783; color: #55472d; font: 11px serif; }
 #realm-panel .realm-training-card button[data-full="true"] { background: #b7a786; }
+#realm-panel .realm-training-card button[data-insufficient="true"] { color: #a7423e; }
 #realm-panel #realm-task { position: absolute; top: 604px; left: 7%; width: 86%; margin: 0; padding: 4px; background: transparent; font-size: 12px; }
 #realm-panel #realm-message { min-height: 0; margin: 0 0 8px; font-size: 12px; }
 #realm-panel #realm-message:empty { display: none; }

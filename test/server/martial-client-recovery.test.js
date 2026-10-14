@@ -231,6 +231,7 @@ function assertRealmProgress(document, value) {
 test('realm progress binds successful HTTP state and fresh client reads persisted1/30', async(t)=>{
   const h=await harness(t,null,initialRealm); await h.click(h.byId('open-realm'));
   assertRealmProgress(h.document,0); const before=await h.realmDisk();
+  assert.ok(h.byId('realm-training').querySelectorAll('button').every(b=>b.dataset.insufficient==='false'), 'Sufficient balance is not marked insufficient');
   await h.click(h.byId('realm-training').querySelector('button'));
   assertRealmProgress(h.document,1); assert.equal((await h.realmState()).revision,1);
   assert.notEqual(await h.realmDisk(),before);
@@ -250,13 +251,13 @@ test('realm failed persistence leaves progress unchanged, locks actions and GET 
 });
 test('realm artificial29/30 reaches30 and all three capped cards stay disabled',async(t)=>{
   // Isolated existing-domain test data; this is not a new checkpoint or resource grant.
-  const realm={...initialRealm,revision:29,experience:100,counts:{trial:9,stance:10,run:10},totalTraining:29,attributes:{attack:28,defense:15,health:2000}};
+  const realm={...initialRealm,revision:29,experience:12,counts:{trial:9,stance:10,run:10},totalTraining:29,attributes:{attack:28,defense:15,health:2000}};
   const h=await harness(t,null,realm);await h.click(h.byId('open-realm'));assertRealmProgress(h.document,29);
   await h.click(h.byId('realm-training').querySelector('button'));assertRealmProgress(h.document,30);
   const buttons=h.byId('realm-training').querySelectorAll('button');assert.equal(buttons.length,3);
-  assert.ok(buttons.every(b=>b.disabled&&b.textContent==='已达瓶颈'));
+  assert.ok(buttons.every(b=>b.disabled&&b.textContent==='已达瓶颈'&&b.dataset.insufficient==='false'), 'Full cards are not insufficient even with zero balance');
   const writes=h.requests.filter(r=>r.method==='POST').length;for(const button of buttons)await h.click(button);
-  assert.equal(h.requests.filter(r=>r.method==='POST').length,writes);assert.equal((await h.realmState()).resource.amount,88);
+  assert.equal(h.requests.filter(r=>r.method==='POST').length,writes);assert.equal((await h.realmState()).resource.amount,0);
 });
 test('ordinary role has no realm navigation or implicit realm file',async(t)=>{
   const h=await harness(t,null);assert.equal(h.byId('open-realm').hidden,true);assert.equal(h.byId('continue-realm').hidden,true);
@@ -375,4 +376,21 @@ for (const loss of [false, true]) test(`material popup follows real upgrade cons
   assert.match(h.byId('player-material-quantity').textContent, /数量[：:]\s*1/);
   assert.equal(h.byId('upgrade-martial').disabled, true);
   assert.equal(h.requests.filter((r)=>r.path==='/api/martial-state/upgrade').length, 1, 'Never auto-replay upgrade');
+});
+
+test('realm exact cost becomes insufficient after real training without disabling or adding requests',async(t)=>{
+  const h=await harness(t,null,{...initialRealm,experience:12});await h.click(h.byId('open-realm'));
+  let buttons=h.byId('realm-training').querySelectorAll('button');
+  assert.ok(buttons.every(b=>b.dataset.insufficient==='false'&&!b.disabled));
+  const reads=h.requests.filter(r=>r.path==='/api/realm-state'&&r.method==='GET').length;
+  await h.click(buttons[0]);
+  assert.equal((await h.realmState()).resource.amount,0);assertRealmProgress(h.document,1);
+  buttons=h.byId('realm-training').querySelectorAll('button');
+  assert.ok(buttons.every(b=>b.dataset.insufficient==='true'&&!b.disabled), 'Style flag must not disable unfinished cards');
+  const disk=await h.realmDisk();await h.click(buttons[0]);
+  assert.equal(h.byId('realm-message').textContent,'江湖阅历不足');
+  assert.equal(await h.realmDisk(),disk);assertRealmProgress(h.document,1);
+  assert.ok(buttons.every(b=>b.dataset.insufficient==='true'&&!b.disabled));
+  assert.equal(h.requests.filter(r=>r.path==='/api/realm-state'&&r.method==='GET').length,reads,'No automatic extra realm read');
+  assert.equal(h.requests.filter(r=>r.path==='/api/realm-state/train').length,2,'Only explicit training clicks send writes');
 });
