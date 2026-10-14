@@ -42,3 +42,4 @@
 "MARTIAL-CLIENT-RECOVERY","武学未知写结果恢复与图鉴提示修复","客户端/架构/QA及主会话","PARTIAL_VERIFIED","MARTIAL-THREE-LIMITED","docs/martial-client-recovery-qa.md","开发完整108项通过；QA独立复跑新增HTTP和NodeVM逻辑12项通过；非真实页面，内置Browser恢复后补验"
 "GEAR-UNIFIED","装备显式并入统一主存档","服务端/QA及主会话","PARTIAL_VERIFIED","ASSETS-MARTIAL和GEAR-BLADE","docs/gear-assets-qa.md","开发113项通过，独立HTTP/CLI9项通过；迁后页面NOT_RUN，不默认发装备或新增检查点"
 "MARTIAL-VISUAL-LAYOUT","武学纸色六槽四列卡片布局","客户端/QA及主会话","PARTIAL_VERIFIED","MARTIAL-THREE-LIMITED","docs/martial-visual-qa.md","现图静态基准及最终12脚本回归通过；原图标素材仍缺，页面NOT_RUN非视觉1比1"
+"REALM-VISUAL-LAYOUT","初入江湖布局与真实进度条","客户端/架构/QA及主会话","PARTIAL_VERIFIED","REALM-TRAIN","docs/realm-visual-qa.md","真实HTTP及客户端逻辑16项复跑通过含4项境界；静态基准已核，页面NOT_RUN且缺人物地面图标"

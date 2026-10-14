@@ -522,6 +522,8 @@ function displayRealm(state) {
   realmState = state;
   byId('realm-resource').textContent = `${state.resource.name}：${state.resource.amount}`;
   byId('realm-name').textContent = state.realm.name;
+  byId('realm-progress-bar').max = state.realm.progress.target;
+  byId('realm-progress-bar').value = state.realm.progress.current;
   byId('realm-progress').textContent = `${state.realm.progress.current}/${state.realm.progress.target}`;
   byId('realm-attributes').replaceChildren();
   for (const [key, label] of Object.entries(realmAttributeNames)) {

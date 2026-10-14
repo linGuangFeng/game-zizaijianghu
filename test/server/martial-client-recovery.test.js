@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises';
+import { readFile, writeFile, mkdtemp, rm, rename, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { once } from 'node:events';
@@ -69,11 +69,13 @@ function documentFrom(html) {
 }
 const character = { name: '响应丢失回归', appearanceId: 'male-reference-0002' };
 const blue = 'blue-sword-reference', sword = 'ruwu-sword-reference', uppercut = 'uppercut-reference';
-async function harness(t, saved) {
+async function harness(t, saved, realm = null) {
   const directory = await mkdtemp(join(tmpdir(), 'martial-client-'));
   const saveFile = join(directory, 'character.json'); const martialSaveFile = saveFile + '.martial.json';
   await writeFile(saveFile, JSON.stringify(character));
-  await writeFile(martialSaveFile, JSON.stringify({ character, ...saved }));
+  if (saved) await writeFile(martialSaveFile, JSON.stringify({ character, ...saved }));
+  const realmSaveFile = saveFile + '.realm.json';
+  if (realm) await writeFile(realmSaveFile, JSON.stringify({ character, ...realm }));
   const server = await createApp({ saveFile, clientDirectory: directory }); server.listen(0, '127.0.0.1'); await once(server, 'listening');
   t.after(async () => { await new Promise((resolve) => server.close(resolve)); await rm(directory, { recursive: true, force: true }); });
   const base = 'http://127.0.0.1:' + server.address().port;
@@ -115,9 +117,19 @@ async function harness(t, saved) {
   }
   const byId = (id) => document.getElementById(id);
   const click = async (node) => { assert.ok(node, 'Actual rendered control must exist'); await node.click(); await settle(); };
-  await settle(); await click(byId('open-equipment'));
-  assert.equal(byId('auto-equip').disabled, false, 'Successful initial GET opens controls');
+  await settle();
+  if (saved) { await click(byId('open-equipment'));
+    assert.equal(byId('auto-equip').disabled, false, 'Successful initial GET opens controls'); }
   return { document, byId, click, settle, requests,
+    async reloadClient() {
+      const fresh = documentFrom(await readFile(new URL('../../client/index.html', import.meta.url), 'utf8'));
+      runInContext(await readFile(new URL('../../client/app.js', import.meta.url), 'utf8'), createContext({ document: fresh, fetch: transport, console, crypto: globalThis.crypto }), { filename: 'client/app.js' });
+      await settle(); return fresh;
+    },
+    realmState: async () => (await (await fetch(base + '/api/realm-state')).json()).state,
+    realmDisk: () => readFile(realmSaveFile, 'utf8'),
+    async blockRealmWrite() { await rename(realmSaveFile, realmSaveFile + '.bak'); await mkdir(realmSaveFile); },
+    async restoreRealmWrite() { await rm(realmSaveFile, { recursive: true }); await rename(realmSaveFile + '.bak', realmSaveFile); },
     holdCatalog(phase, fail) {
       let arrived, release; const reached = new Promise((resolve) => { arrived = resolve; });
       const wait = new Promise((resolve) => { release = resolve; });
@@ -201,4 +213,48 @@ test('locked slot hints show observed conditions without sending mutations',asyn
   assert.equal(h.byId('status').textContent,`通关江湖事件第${event}关解锁`);
  }
  assert.equal(h.requests.length,requestCount,'Read-only hint must not send any request');assert.deepEqual(await h.disk(),before);
+});
+
+
+const initialRealm = { checkpoint: 'observed-before-training', revision: 0, experience: 120,
+  counts: { trial: 0, stance: 0, run: 0 }, totalTraining: 0, attributes: { attack: 10, defense: 5, health: 1000 } };
+function assertRealmProgress(document, value) {
+  assert.equal(document.getElementById('realm-progress-bar').value, value);
+  assert.equal(document.getElementById('realm-progress-bar').max, 30);
+  assert.equal(document.getElementById('realm-progress').textContent, value + '/30');
+}
+test('realm progress binds successful HTTP state and fresh client reads persisted1/30', async(t)=>{
+  const h=await harness(t,null,initialRealm); await h.click(h.byId('open-realm'));
+  assertRealmProgress(h.document,0); const before=await h.realmDisk();
+  await h.click(h.byId('realm-training').querySelector('button'));
+  assertRealmProgress(h.document,1); assert.equal((await h.realmState()).revision,1);
+  assert.notEqual(await h.realmDisk(),before);
+  const after=await h.realmDisk(); const fresh=await h.reloadClient();
+  assertRealmProgress(fresh,1);assert.equal(await h.realmDisk(),after,'New client GET cannot mutate realm');
+});
+test('realm failed persistence leaves progress unchanged, locks actions and GET recovery permits retry',async(t)=>{
+  const h=await harness(t,null,initialRealm);await h.click(h.byId('open-realm'));await h.blockRealmWrite();
+  await h.click(h.byId('realm-training').querySelector('button'));
+  assertRealmProgress(h.document,0);assert.equal((await h.realmState()).revision,0);
+  assert.equal(h.byId('retry-realm').hidden,false);
+  assert.ok(h.byId('realm-training').querySelectorAll('button').every(b=>b.disabled));
+  assert.equal(h.requests.filter(r=>r.method==='POST').length,1);
+  await h.restoreRealmWrite();await h.click(h.byId('retry-realm'));assertRealmProgress(h.document,0);
+  assert.ok(h.byId('realm-training').querySelectorAll('button').every(b=>!b.disabled));
+  await h.click(h.byId('realm-training').querySelector('button'));assertRealmProgress(h.document,1);
+});
+test('realm artificial29/30 reaches30 and all three capped cards stay disabled',async(t)=>{
+  // Isolated existing-domain test data; this is not a new checkpoint or resource grant.
+  const realm={...initialRealm,revision:29,experience:100,counts:{trial:9,stance:10,run:10},totalTraining:29,attributes:{attack:28,defense:15,health:2000}};
+  const h=await harness(t,null,realm);await h.click(h.byId('open-realm'));assertRealmProgress(h.document,29);
+  await h.click(h.byId('realm-training').querySelector('button'));assertRealmProgress(h.document,30);
+  const buttons=h.byId('realm-training').querySelectorAll('button');assert.equal(buttons.length,3);
+  assert.ok(buttons.every(b=>b.disabled&&b.textContent==='已达瓶颈'));
+  const writes=h.requests.filter(r=>r.method==='POST').length;for(const button of buttons)await h.click(button);
+  assert.equal(h.requests.filter(r=>r.method==='POST').length,writes);assert.equal((await h.realmState()).resource.amount,88);
+});
+test('ordinary role has no realm navigation or implicit realm file',async(t)=>{
+  const h=await harness(t,null);assert.equal(h.byId('open-realm').hidden,true);assert.equal(h.byId('continue-realm').hidden,true);
+  assert.equal(h.byId('realm-training').children.length,0);assert.equal(h.requests.filter(r=>r.method==='POST').length,0);
+  await assert.rejects(h.realmDisk(),{code:'ENOENT'});
 });

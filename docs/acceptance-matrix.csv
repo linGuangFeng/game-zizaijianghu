@@ -42,3 +42,4 @@ LOCAL-MARTIAL-THREE,local-function,显式三本中槽卸下补回,既有checkpoi
 "LOCAL-MARTIAL-CLIENT-RECOVERY","local-scope","武学未知结果锁写及图鉴响应隔离","已有本地持久化合同与锁槽截图","真实HTTP加客户端脚本12项开发及QA复跑通过","NOT_RUN：NodeVM最小DOM不替代内置Browser","PARTIAL_VERIFIED","待内置Browser恢复后页面点击；没有新增自然授予或解锁","docs/martial-client-recovery-qa.md"
 "LOCAL-GEAR-UNIFIED","local-function","装备显式统一存档","已有装备样本与本地主事务","独立HTTP/CLI9项通过","NOT_RUN","PARTIAL_VERIFIED","待迁后页面；无自然装备授予","docs/gear-assets-qa.md"
 "LOCAL-MARTIAL-VISUAL","visual","武学六槽与四列布局","原版单本及三槽截图","HTML关联检查和12项客户端逻辑回归通过","NOT_RUN：仅静态基准","PARTIAL_VERIFIED","独立美术缺口及页面比对未完成","docs/martial-visual-qa.md"
+"LOCAL-REALM-VISUAL","visual","初期境界布局和进度绑定","原版训练三图及实际realm.progress","专项16项复跑通过含4项境界","NOT_RUN：静态与NodeVM不代表浏览器","PARTIAL_VERIFIED","待真实页面/素材补齐，未改九品共享布局","docs/realm-visual-qa.md"
