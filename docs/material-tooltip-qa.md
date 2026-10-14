@@ -35,3 +35,56 @@
 |client/index.html|771E92FA7813E68B36E0B9CE8C311E11B427387175D3A2A052C73ABEF90712C4|
 |client/styles.css|0977D3DD27F632CED6C269024605BF72DC4A804E0FB1CAA81B498AEC69050AB5|
 |test/server/martial-client-recovery.test.js|B033B28F2B7C76CD0FE46BAABEFFCF62025D74106B4071CEDC8178E8676FFEB0|
+
+## 原生Browser验收准备（2026-10-14，NOT_RUN）
+
+隔离样本已准备：`.local/material-native-i7SUeC/character.json`及同名`.martial.json`。角色“材料弹层原生验收”、appearanceId为male-reference-0002，武学character与角色完全一致；沿用observed-event1-before-equip，revision0、上勾拳/入悟两槽、上勾拳Lv1、人工材料2。不是生产赠送或新checkpoint。已用现有createApp校验成功，未listen、未启动服务或浏览器。
+
+### 启动/停止（PowerShell，新专用终端）
+
+```powershell
+Set-Location D:\work\hd\game-zizaijianghu
+$env:PORT='3031'
+$env:CHARACTER_SAVE_FILE='D:\work\hd\game-zizaijianghu\.local\material-native-i7SUeC\character.json'
+$env:MARTIAL_SAVE_FILE=$env:CHARACTER_SAVE_FILE+'.martial.json'
+$env:REALM_SAVE_FILE=$env:CHARACTER_SAVE_FILE+'.realm.json'
+$env:GEAR_SAVE_FILE=$env:CHARACTER_SAVE_FILE+'.gear.json'
+Remove-Item Env:MARTIAL_CHECKPOINT,Env:REALM_CHECKPOINT,Env:GEAR_CHECKPOINT -ErrorAction SilentlyContinue
+node server/index.js
+```
+
+以上仅修改专用终端进程环境，关闭终端即可丢弃，不改用户配置。不能用空字符串代替删除checkpoint环境变量。3031若占用，换空闲端口，不停止他人服务。仅在已加载的内部Browser访问http://127.0.0.1:3031；不自动打开宿主浏览器。结束在此终端Ctrl+C，确认进程退出且健康接口不再连通，再关闭终端。本次准备没有启动该服务，没有遗留进程。
+
+另一终端只读预检：
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:3031/api/health
+Invoke-RestMethod http://127.0.0.1:3031/api/character
+(Invoke-RestMethod http://127.0.0.1:3031/api/martial-state).state.growth.uppercut
+```
+
+预期角色如上，level1，material.name上勾拳、quantity2。
+
+### 原生实际步骤及预期
+
+1. 江湖→武学→非编辑“上勾拳养成”，等读取完成，记录本地网络请求。材料按钮可用、数量2。
+2. 真实Tab定位材料按钮、Enter打开。dialog.open=true、hidden=false；名称上勾拳/数量2，document.activeElement位于dialog内。
+3. 真实Tab/Shift+Tab不得落到背后升级、返回或导航控件；真实点击不得激活背景控件。不能用脚本直接调用背后handler替代。
+4. 点击纸框内名称/数量保持打开；点击外部空白关闭。焦点回材料按钮，弹层旧名称/数量清空。
+5. 再开后真实Escape关闭并恢复焦点；再开后辅助关闭按钮同样关闭恢复。VM调用cancel不能代替Escape。
+6. 在405像素参考宽度及窄视口核标题/数量/关闭按钮可见，滚动及来源文字不遮挡关闭按钮。留实际截图/结果。
+7. 全程不点升级/装卸，无POST/PUT/PATCH/DELETE；API再读仍revision0、Lv1、材料2，两个存档SHA256不变。不操作来源跳转，不声明已实现藏经阁。
+
+### 只读哈希对照
+
+准备时基准已存在样本目录before-sha256.json。前后执行以下命令并分别与基准逐项比对，不重写存档：
+
+```powershell
+Get-Content D:\work\hd\game-zizaijianghu\.local\material-native-i7SUeC\before-sha256.json
+Get-FileHash D:\work\hd\game-zizaijianghu\.local\material-native-i7SUeC\character.json,D:\work\hd\game-zizaijianghu\.local\material-native-i7SUeC\character.json.martial.json -Algorithm SHA256
+```
+
+角色基准：2b73bc7faf2a55ffb68f46fe97d03723afcfe2cceac46dff7d6ba74040afdeda。
+武学基准：0fe8c891eccc915ea4e79ddf3792cb410e75e1b507e475f8e73095940cccf5a4。
+
+本节仅准备完成。原生焦点/背景阻断/Escape/实际点击/布局均NOT_RUN，不能用已过HTTP/VM测试抵扣。

@@ -1,11 +1,11 @@
 {
   "projectComplete": false,
-  "activeWork": "只读参考布局验收：HTTP2/2及VM5/5独立通过，六hash核同，本轮提交；已开始官方浏览器恢复资料核查",
+  "activeWork": "浏览器诊断与原生材料弹层验收准备已收口；插件已启用但当前聊天未列Browser，用户@Browser问题待答",
   "lastFailure": "九品QA模型容量失败已即时通知监听；同代理单次恢复实际读取/看图后独立20/20成功，保留原错误，非网络或测试失败。",
   "userPaused": false,
-  "nextAction": "优先诊断内置Browser能力缺失：OpenAI Docs技能已读，官方Browser页面已实际打开；下一轮查支持配置和本机具体状态，不绕未列Browser技能、不用宿主。自然授予链/顿悟产出/拖动仍缺证，不造新玩法。",
-  "status": "HANDOFF_READY",
-  "updatedAt": "2026-10-14T08:11:13.2585271Z",
+  "nextAction": "用户选择Browser后核实际能力/连接/读页；材料隔离样本与键盘焦点验收步骤已备。相同能力缺失不重复唤醒诊断，明确新独立工作可另派；项目未完成未暂停。",
+  "status": "BROWSER_ATTACHMENT_REQUESTED",
+  "updatedAt": "2026-10-14T08:21:33.0753887Z",
   "agents": [
     {
       "state": "COMPLETE",

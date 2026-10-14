@@ -41,3 +41,11 @@ scripts/app-mcp-client.mjs 使用当前官方codex-app-tools标准stdio MCP，�
 | Grok独立测试 | ../grok/qa-review.md、../grok/qa-status.json |
 
 上述目录均相对本文件所在的 docs/orchestration。
+
+## 2026-10-14 内置浏览器能力诊断
+
+主会话当前工具目录有 node_repl.js，但技能清单没有 Browser。实际 ChatGPT.exe 进程来自 26.1002.7124 安装目录；同安装包 Browser 技能及客户端文件存在，用户配置 browser@openai-bundled 为 enabled=true。这些只能证明安装与配置，不能证明当前聊天已获得浏览器控制能力，也不能定位根因。features.js_repl=false 不是证明 MCP node_repl 失效的依据，未改此配置。
+
+完整 Browser SKILL 明确要求“The in-app browser is available only when the Browser skill is listed for the session.”。文件 SHA256 为 B115AC6D7EB3E74D3A8650105851A2C4C8DBA72F268E34F71300DA7EB28C448E。主先前只读前段时误称没有该句，完整读取后已立即撤回；不能据不完整检索绕过技能限制。没有执行旧浏览器模块、宿主浏览器、凭据/历史读取或应用重启。
+
+[官方 Browser 说明](https://learn.chatgpt.com/docs/browser?surface=app)已实际打开，说明可在聊天用 @Browser 指定内置浏览器。已向用户请求在当前聊天选择该入口并发送继续检查；这是需要用户操作的会话能力选择，不是网站账号未提供。该步骤不保证解决，只有允许能力出现、连接并实际读取页面才记录恢复。未收到回复不是授权或已恢复；不反复唤醒相同诊断，不把页面依赖泛化为全部开发不可做。
