@@ -126,6 +126,7 @@ async function harness(t, saved, realm = null) {
       runInContext(await readFile(new URL('../../client/app.js', import.meta.url), 'utf8'), createContext({ document: fresh, fetch: transport, console, crypto: globalThis.crypto }), { filename: 'client/app.js' });
       await settle(); return fresh;
     },
+    breakthroughState: async () => (await (await fetch(base + '/api/breakthrough-state')).json()).state,
     realmState: async () => (await (await fetch(base + '/api/realm-state')).json()).state,
     realmDisk: () => readFile(realmSaveFile, 'utf8'),
     async blockRealmWrite() { await rename(realmSaveFile, realmSaveFile + '.bak'); await mkdir(realmSaveFile); },
@@ -257,4 +258,50 @@ test('ordinary role has no realm navigation or implicit realm file',async(t)=>{
   const h=await harness(t,null);assert.equal(h.byId('open-realm').hidden,true);assert.equal(h.byId('continue-realm').hidden,true);
   assert.equal(h.byId('realm-training').children.length,0);assert.equal(h.requests.filter(r=>r.method==='POST').length,0);
   await assert.rejects(h.realmDisk(),{code:'ENOENT'});
+});
+
+
+function ninthSample(stage, counts, attributes) {
+  // Explicit isolated existing-domain snapshot, not a production initializer or grant.
+  return { checkpoint: 'observed-before-first-breakthrough', revision: 4, experience: 100,
+    counts: { trial: 10, stance: 10, run: 10 }, totalTraining: 30, advanced: true, attributes,
+    ninthTraining: { stage, counts }, receipts: ['event5', 'martial2', 'training30'].map((conditionId) => ({
+      id: 'first-breakthrough-' + conditionId, conditionId, reward: { id: 'baodian-token-reference', name: '宝典令', amount: 5 } })) };
+}
+function assertNinthProgress(document, value, max) {
+  assert.equal(document.getElementById('ninth-progress-bar').value, value);
+  assert.equal(document.getElementById('ninth-progress-bar').max, max);
+  assert.equal(document.getElementById('ninth-progress').textContent, value + '/' + max);
+}
+for (const sample of [
+  { name: 'first to second', stage: 1, counts: { trial: 10, stance: 13, run: 15 }, attributes: { attack: 60, defense: 33, health: 4150 }, before: [38,39], after: [0,54], nextStage: 2 },
+  { name: 'second to third', stage: 2, counts: { trial: 28, stance: 31, run: 33 }, attributes: { attack: 106, defense: 56, health: 6630 }, before: [53,54], after: [0,66], nextStage: 3 },
+]) test('ninth progress changes max on real HTTP '+sample.name+' boundary', async(t)=>{
+  const h=await harness(t,null,ninthSample(sample.stage,sample.counts,sample.attributes));
+  await h.click(h.byId('open-ninth-training'));assertNinthProgress(h.document,...sample.before);
+  const before=await h.breakthroughState();
+  await h.click(h.byId('ninth-training-cards').querySelectorAll('button')[2]);
+  assertNinthProgress(h.document,...sample.after);
+  const state=await h.breakthroughState();assert.equal(state.ninthTraining.stage,sample.nextStage);assert.equal(state.revision,5);assert.equal(state.resource.amount,84);assert.deepEqual(state.receipts,before.receipts);
+  const bytes=await h.realmDisk();const fresh=await h.reloadClient();assertNinthProgress(fresh,...sample.after);assert.equal(await h.realmDisk(),bytes);
+});
+
+test('ninth final66/66 keeps third stage and locks actual training buttons',async(t)=>{
+ const h=await harness(t,null,ninthSample(3,{trial:53,stance:53,run:52},{attack:156,defense:78,health:8720}));
+ await h.click(h.byId('open-ninth-training'));assertNinthProgress(h.document,65,66);
+ const before=h.byId('ninth-training-cards').querySelectorAll('button');assert.deepEqual(before.map(b=>b.disabled),[true,true,false]);
+ await h.click(before[2]);assertNinthProgress(h.document,66,66);
+ const state=await h.breakthroughState();assert.equal(state.ninthTraining.stage,3);assert.equal(state.ninthTraining.supported,false);assert.equal(state.realm.attributes.health,8830);
+ const buttons=h.byId('ninth-training-cards').querySelectorAll('button');assert.ok(buttons.every(b=>b.disabled&&b.textContent==='已达瓶颈'));
+ const writes=h.requests.filter(r=>r.method==='POST').length;for(const button of buttons)await h.click(button);assert.equal(h.requests.filter(r=>r.method==='POST').length,writes);
+});
+
+test('ninth failed write cannot advance progress and successful GET recovery permits explicit retry',async(t)=>{
+ const h=await harness(t,null,ninthSample(2,{trial:10,stance:13,run:16},{attack:70,defense:38,health:4760}));
+ await h.click(h.byId('open-ninth-training'));assertNinthProgress(h.document,0,54);await h.blockRealmWrite();
+ await h.click(h.byId('ninth-training-cards').querySelector('button'));assertNinthProgress(h.document,0,54);
+ assert.equal((await h.breakthroughState()).revision,4);assert.equal(h.byId('retry-ninth').hidden,false);assert.ok(h.byId('ninth-training-cards').querySelectorAll('button').every(b=>b.disabled));
+ assert.equal(h.requests.filter(r=>r.method==='POST').length,1);await h.restoreRealmWrite();await h.click(h.byId('retry-ninth'));
+ assertNinthProgress(h.document,0,54);assert.ok(h.byId('ninth-training-cards').querySelectorAll('button').every(b=>!b.disabled));
+ await h.click(h.byId('ninth-training-cards').querySelector('button'));assertNinthProgress(h.document,1,54);assert.equal((await h.breakthroughState()).resource.amount,84);
 });

@@ -72,3 +72,5 @@ VA-13 的部分结构现在有实现；VA-14 的书册和技能图标仍缺，�
 装备页：405宽框架、两列属性、单刀入口、内联详情与候选纸框已实现；实际数据投影未改。原人物/武器/纹理仍缺，内联详情不等于原覆盖弹层，UI NOT_RUN。详见 docs/gear-visual-qa.md。
 
 首次突破：三条件卡及当前属性布局、暖色内联奖励与结果框已实现；目标预览、原遮罩、人物与宝典令图仍缺，不是完整1:1。UI NOT_RUN，见 docs/first-breakthrough-visual-qa.md。
+
+九品前期：第一至第三重共用已证布局，新增progress绑定真实current/target，标题/属性/三卡局部排版；原人物/圆台/图标仍缺，UI NOT_RUN。详见 docs/ninth-visual-qa.md。

@@ -1033,6 +1033,8 @@ function displayNinthTraining(state) {
   if (!ninth) return;
   byId('ninth-training-title').textContent = `${state.realm.name} · ${ninth.stageName}`;
   byId('ninth-resource').textContent = `${state.resource.name}：${state.resource.amount}`;
+  byId('ninth-progress-bar').max = ninth.progress.target;
+  byId('ninth-progress-bar').value = ninth.progress.current;
   byId('ninth-progress').textContent = `${ninth.progress.current}/${ninth.progress.target}`;
   byId('ninth-attributes').replaceChildren();
   for (const [key, label] of Object.entries(realmAttributeNames)) {

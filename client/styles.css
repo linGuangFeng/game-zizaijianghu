@@ -222,11 +222,34 @@ dd { margin: 0; overflow-wrap: anywhere; }
 #player-martial-detail > button { width: 100%; margin-top: 12px; }
 #player-martial-material { padding: 14px; background: #e9dfc6; color: #544732; font-size: 14px; line-height: 1.6; }
 
-#ninth-training-panel { margin-top: 24px; }
-#ninth-training-panel > button { width: 100%; margin-top: 12px; }
-#ninth-resource, #ninth-progress { text-align: center; }
-#ninth-attributes { font-size: 14px; }
-
+/* Ninth early stages only: observed 405 x 720 layout; character art is unavailable. */
+.game-shell:has(> #ninth-training-panel:not([hidden])) { position: relative; width: min(100%, 405px); padding: 0; border: 0; background: #c7b58d; }
+.game-shell:has(> #ninth-training-panel:not([hidden])) > header { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.game-shell:has(> #ninth-training-panel:not([hidden])) > #status { position: absolute; z-index: 3; top: 42px; left: 4%; width: 92%; min-height: 0; margin: 0; font-size: 12px; }
+.game-shell:has(> #ninth-training-panel:not([hidden])) > #status:empty { display: none; }
+#ninth-training-panel { position: relative; min-height: 720px; margin: 0; padding: 655px 20px 12px; color: #514630; background: linear-gradient(#bcbcaf 0 350px, #c4b286 410px, #b49a68); }
+#ninth-training-panel #ninth-resource { position: absolute; top: 0; left: 0; width: 100%; margin: 0; padding: 10px 18px; text-align: right; font-size: 12px; background: #e5e4d4; border-bottom: 1px solid #a7a58a; }
+#ninth-training-panel .realm-seat { position: absolute; top: 56px; left: 0; right: 0; height: 302px; min-height: 0; margin: 0; background: #bcbcaf; }
+#ninth-training-panel #ninth-training-title { position: absolute; top: 362px; left: 0; width: 100%; margin: 0; font: 18px/26px serif; color: #fff2d1; text-shadow: 0 1px #77654a; }
+#ninth-training-panel #ninth-progress-bar { position: absolute; top: 392px; left: 17%; width: 66%; height: 12px; appearance: none; border: 1px solid #978153; background: #587579; accent-color: #45b6a2; }
+#ninth-training-panel #ninth-progress-bar::-webkit-progress-bar { background: #587579; }
+#ninth-training-panel #ninth-progress-bar::-webkit-progress-value { background: #45b6a2; }
+#ninth-training-panel #ninth-progress-bar::-moz-progress-bar { background: #45b6a2; }
+#ninth-training-panel #ninth-progress { position: absolute; top: 390px; left: 17%; width: 66%; margin: 0; font: 11px/16px serif; color: #fff8df; pointer-events: none; }
+#ninth-training-panel #ninth-attributes { position: absolute; top: 417px; left: 7%; width: 86%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-block: 1px solid #a28b5f; color: #fff0ce; font: 14px serif; }
+#ninth-training-panel #ninth-attributes div { justify-content: center; gap: 1px; padding: 6px 0; border: 0; }
+#ninth-training-panel #ninth-attributes dt { color: inherit; }
+#ninth-training-panel .realm-training { position: absolute; top: 455px; left: 7%; width: 86%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 0; }
+#ninth-training-panel .realm-training-card { min-width: 0; height: 140px; padding: 0; display: grid; grid-template-rows: 24px 60px 28px 28px; gap: 0; border: 1px solid #8d784e; background: #d0c09c; font: 13px serif; }
+#ninth-training-panel .realm-training-card strong { grid-row: 1; padding: 4px 0; border-bottom: 1px solid #ad9566; background: #a68c5b; color: #f6e8c7; font-weight: 400; font-size: 12px; }
+#ninth-training-panel .realm-training-card::before { content: ''; grid-row: 2; grid-column: 1; margin: 8px 20%; border: 1px solid #b5a780; background: #c6b58e; }
+#ninth-training-panel .realm-training-card > span { grid-row: 3; padding: 5px 0; }
+#ninth-training-panel .realm-training-card button { grid-row: 4; min-height: 0; padding: 3px 0; border: 0; border-top: 1px solid #b19967; border-radius: 0; background: #e5c783; color: #55472d; font: 11px serif; }
+#ninth-training-panel .realm-training-card button[data-unsupported="true"] { background: #b7a786; }
+#ninth-training-panel #ninth-limit { position: absolute; top: 604px; left: 7%; width: 86%; margin: 0; padding: 4px; background: transparent; font-size: 12px; }
+#ninth-training-panel #ninth-message { min-height: 0; margin: 0 0 8px; font-size: 12px; }
+#ninth-training-panel #ninth-message:empty { display: none; }
+#ninth-training-panel > button { margin: 8px 0 0; color: #f8eccb; background: #806d48; border-color: #d4be8b; }
 #open-test-commerce { margin-top: 18px; }
 #commerce-panel { margin-top: 24px; }
 #commerce-panel > button { width: 100%; margin-top: 12px; }
