@@ -1,11 +1,11 @@
 {
   "projectComplete": false,
-  "activeWork": "成本标红同轮验收，独立4/4及三hash核同；自动不足弹层候选经三方核证撤回，本轮提交推送",
+  "activeWork": "只读参考布局验收：HTTP2/2及VM5/5独立通过，六hash核同，本轮提交；已开始官方浏览器恢复资料核查",
   "lastFailure": "九品QA模型容量失败已即时通知监听；同代理单次恢复实际读取/看图后独立20/20成功，保留原错误，非网络或测试失败。",
   "userPaused": false,
-  "nextAction": "只读图鉴详情局部排版候选：client已核original-martial-detail、martial-catalog/showMartialEntry和HTML，可仅纸框摘要/属性双列/天赋行；原图是养成弹层不是独立图鉴页，保留参考只读和缺文提示，不添升级或玩家材料。主先核证后实施。",
+  "nextAction": "优先诊断内置Browser能力缺失：OpenAI Docs技能已读，官方Browser页面已实际打开；下一轮查支持配置和本机具体状态，不绕未列Browser技能、不用宿主。自然授予链/顿悟产出/拖动仍缺证，不造新玩法。",
   "status": "HANDOFF_READY",
-  "updatedAt": "2026-10-14T08:05:24.2355196Z",
+  "updatedAt": "2026-10-14T08:11:13.2585271Z",
   "agents": [
     {
       "state": "COMPLETE",

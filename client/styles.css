@@ -40,10 +40,27 @@ dd { margin: 0; overflow-wrap: anywhere; }
 .martial-card { display: flex; align-items: center; justify-content: space-between; gap: 15px; background: #e3e9df; color: #315d50; text-align: left; }
 .martial-card span { font-size: 13px; }
 #martial-list > button, #martial-detail > button { width: 100%; margin-top: 12px; }
-#martial-detail h3 { margin: 24px 0 10px; font-size: 16px; font-weight: 500; }
-#martial-detail ul { padding-left: 20px; font-size: 14px; line-height: 1.8; }
-#martial-detail dl { font-size: 14px; }
-
+/* Reference-only detail borrows the observed growth frame, not player state. */
+.game-shell:has(> #martial-detail:not([hidden])) { position: relative; width: min(100%, 405px); min-height: 720px; padding: 110px 17px 24px; border: 0; background: #555c52; }
+.game-shell:has(> #martial-detail:not([hidden])) > header { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.game-shell:has(> #martial-detail:not([hidden])) > #status { min-height: 0; margin: 0; }
+.game-shell:has(> #martial-detail:not([hidden])) > #status:empty { display: none; }
+#martial-detail { padding: 0 12px 14px; border: 4px double #a3936d; background: #d2cdbb; color: #504b3b; }
+#martial-detail-title { margin: 0 -12px; padding: 8px; background: #75664a; color: #f7ebc8; text-align: center; font: 19px serif; }
+#martial-detail > .reference-note { margin: 8px 0; color: #756449; font-size: 12px; }
+#martial-detail .martial-reference-summary { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 8px; margin-top: 10px; }
+#martial-detail .martial-reference-preview { min-height: 144px; border: 3px double #ac9863; background: #b8b09b; }
+#martial-detail dl { font-size: 12px; }
+#martial-facts div { min-width: 0; justify-content: flex-start; gap: 5px; padding: 7px 3px; border: 0; background: #c8c0aa; }
+#martial-detail dt { color: #655b46; }
+#martial-detail h3 { margin: 14px 0 5px; padding: 4px 7px; background: #b8ab8b; color: #675339; font: 14px serif; }
+#martial-detail ul { margin: 6px 0; padding-left: 18px; font-size: 12px; line-height: 1.6; }
+#martial-attributes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#martial-attributes div { justify-content: flex-start; gap: 6px; padding: 6px 3px; border: 0; }
+#martial-attributes div:last-child { grid-column: 1 / -1; }
+#martial-detail #martial-talents { padding-left: 0; list-style: none; }
+#martial-talents li { margin: 4px 0; padding: 5px 7px; border-bottom: 1px solid #b9ae91; color: #7d725b; }
+#martial-detail #back-martial-list { min-height: 38px; color: #65563d; background: #e0d7bf; border-color: #b7aa87; }
 /* Martial layout measured from the 405 x 720 reference; no original art assets. */
 .game-shell:has(> #equipment-panel:not([hidden])) { position: relative; width: min(100%, 405px); padding: 0; border: 0; background: #4a3424; }
 .game-shell:has(> #equipment-panel:not([hidden])) > header { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }

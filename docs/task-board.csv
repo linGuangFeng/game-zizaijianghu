@@ -50,3 +50,4 @@
 "UPPERCUT-VISUAL-LAYOUT","上勾拳养成详情局部布局","客户端/架构/QA及主会话","PARTIAL_VERIFIED","MARTIAL-CLIENT-RECOVERY","docs/uppercut-visual-qa.md","升级和统一材料13项独立通过；当前growth保留，缺素材/演示/原遮罩，UI NOT_RUN"
 "MATERIAL-TOOLTIP","上勾拳材料真实数量弹层","客户端/架构/QA及主会话","PARTIAL_VERIFIED","UPPERCUT-VISUAL-LAYOUT","docs/material-tooltip-qa.md","独立HTTP+VM26项通过，开发完整127项通过；无新API授予，原生焦点/页面NOT_RUN"
 "REALM-COST-FEEDBACK","初入训练成本不足标红","客户端/架构/QA及主会话","PARTIAL_VERIFIED","REALM-VISUAL-LAYOUT","docs/realm-cost-feedback-qa.md","专项4项独立通过；自动不足弹层触发证据不足未实现，UI NOT_RUN"
+"CATALOG-REFERENCE-LAYOUT","只读参考详情局部排版","客户端/架构/QA及主会话","PARTIAL_VERIFIED","MARTIAL-REF","docs/catalog-detail-visual-qa.md","HTTP2项与catalog逻辑5项独立通过；借养成结构非原独立图鉴取证，UI NOT_RUN"
