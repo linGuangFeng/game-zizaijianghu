@@ -33,10 +33,13 @@ class Element {
   append(...nodes) { for (const node of nodes) { node.parent = this; this.children.push(node); } }
   replaceChildren(...nodes) { for (const old of this.children) old.parent = null; this.children = []; this.append(...nodes); }
   addEventListener(type, listener) { const list = this.listeners.get(type) ?? []; list.push(listener); this.listeners.set(type, list); }
-  async click() {
+  async click(target = this) {
     if (this.disabled) return;
-    for (const listener of this.listeners.get('click') ?? []) await listener({ target: this, preventDefault() {} });
+    for (const listener of this.listeners.get('click') ?? []) await listener({ target, currentTarget: this, preventDefault() {} });
   }
+  // Dialog state substitute only; no native focus/inertness or event propagation.
+  showModal() { this.open = true; }
+  close() { this.open = false; }
   focus() {}
   querySelectorAll(selector) {
     const descendants = [];
@@ -147,6 +150,7 @@ function assertLocked(h) {
   assert.equal(h.byId('edit-equipment').disabled, true, 'Unconfirmed edit must remain locked');
   for (const button of h.document.querySelectorAll('#equipment-slots button, #equipment-owned button')) assert.equal(button.disabled, true, 'Slot/card/growth action must remain locked');
   assert.equal(h.byId('upgrade-martial').disabled, true);
+  assert.equal(h.byId('player-martial-material').disabled, true, 'Unconfirmed material quantity must remain inaccessible');
   assert.equal(h.byId('retry-equipment').hidden, false, 'Expose existing GET recovery control');
 }
 const scenarios = [
@@ -304,4 +308,71 @@ test('ninth failed write cannot advance progress and successful GET recovery per
  assert.equal(h.requests.filter(r=>r.method==='POST').length,1);await h.restoreRealmWrite();await h.click(h.byId('retry-ninth'));
  assertNinthProgress(h.document,0,54);assert.ok(h.byId('ninth-training-cards').querySelectorAll('button').every(b=>!b.disabled));
  await h.click(h.byId('ninth-training-cards').querySelector('button'));assertNinthProgress(h.document,1,54);assert.equal((await h.breakthroughState()).resource.amount,84);
+});
+
+// Artificial isolated material samples; no production grant or browser claim.
+const materialSample = (quantity) => ({ checkpoint: 'observed-event1-before-equip', twoSlots: [uppercut,sword], ownedOrder: [uppercut,sword], uppercutProgress: { level: 1, materialQuantity: quantity } });
+async function openMaterialDetail(h) {
+  await h.click(h.document.querySelectorAll('#equipment-owned button').find((node) => node.getAttribute('aria-label') === '上勾拳养成'));
+}
+for (const quantity of [2, null, 0]) test(`material popup reads actual quantity ${quantity} without mutation and closes only by intended controls`, async(t) => {
+  const h = await harness(t, materialSample(quantity)); await openMaterialDetail(h);
+  const disk = await h.disk(), requestCount = h.requests.length;
+  await h.click(h.byId('player-martial-material'));
+  assert.equal(h.byId('player-material-overlay').hidden, false);
+  assert.equal(h.byId('player-material-title').textContent, '上勾拳');
+  assert.match(h.byId('player-material-quantity').textContent, quantity === null ? /数量未确认/ : new RegExp(`数量[：:]\\s*${quantity}`));
+  await h.byId('player-material-overlay').click(h.byId('player-material-quantity'));
+  assert.equal(h.byId('player-material-overlay').hidden, false, 'Content event must not close overlay');
+  await h.click(h.byId('player-material-overlay'));
+  assert.equal(h.byId('player-material-overlay').hidden, true);
+  await h.click(h.byId('player-martial-material')); await h.click(h.byId('close-player-material'));
+  assert.equal(h.byId('player-material-overlay').hidden, true);
+  await h.click(h.byId('player-martial-material'));
+  let cancelled = false;
+  for (const listener of h.byId('player-material-overlay').listeners.get('cancel') ?? []) listener({ preventDefault() { cancelled = true; } });
+  assert.equal(cancelled, true, 'Explicit cancel handler owns close state');
+  assert.equal(h.byId('player-material-overlay').hidden, true);
+  assert.equal(h.byId('player-material-overlay').open, false);
+  assert.equal(h.requests.length, requestCount, 'Opening/closing is local read-only');
+  assert.deepEqual(await h.disk(), disk);
+});
+test('material popup closes immediately on GET and failed read remains locked until successful recovery', async(t) => {
+  const h = await harness(t, materialSample(2)); await openMaterialDetail(h);
+  await h.click(h.byId('player-martial-material')); h.failRead(true);
+  const reading = h.byId('retry-player-martial').click();
+  assert.equal(h.byId('player-material-overlay').hidden, true);
+  assert.equal(h.byId('player-martial-material').disabled, true);
+  await reading; await h.settle();
+  await h.click(h.byId('player-martial-material'));
+  assert.equal(h.byId('player-material-overlay').hidden, true);
+  h.failRead(false); await h.click(h.byId('retry-player-martial'));
+  assert.equal(h.byId('player-martial-material').disabled, false);
+  await h.click(h.byId('player-martial-material'));
+  assert.equal(h.byId('player-material-overlay').hidden, false);
+  await h.click(h.byId('back-player-martial'));
+  assert.equal(h.byId('player-material-overlay').hidden, true);
+  assert.equal(h.requests.filter((r)=>r.method==='POST').length, 0);
+});
+for (const loss of [false, true]) test(`material popup follows real upgrade consumption and ${loss ? 'lost response GET recovery' : 'successful response'}`, async(t) => {
+  const h = await harness(t, materialSample(2)); await openMaterialDetail(h);
+  await h.click(h.byId('player-martial-material'));
+  if (loss) h.dropResponse('/api/martial-state/upgrade','network');
+  const writing = h.byId('upgrade-martial').click();
+  assert.equal(h.byId('player-material-overlay').hidden, true);
+  assert.equal(h.byId('player-martial-material').disabled, true);
+  await writing; await h.settle();
+  assert.equal((await h.state()).growth.uppercut.material.quantity, 1);
+  assert.equal((await h.disk()).uppercutProgress.level, 2);
+  if (loss) {
+    assert.equal(h.byId('player-martial-material').disabled, true);
+    h.failRead(true); await h.click(h.byId('retry-player-martial'));
+    assert.equal(h.byId('player-martial-material').disabled, true);
+    h.failRead(false); await h.click(h.byId('retry-player-martial'));
+  }
+  await h.click(h.byId('player-martial-material'));
+  assert.equal(h.byId('player-material-overlay').hidden, false);
+  assert.match(h.byId('player-material-quantity').textContent, /数量[：:]\s*1/);
+  assert.equal(h.byId('upgrade-martial').disabled, true);
+  assert.equal(h.requests.filter((r)=>r.path==='/api/martial-state/upgrade').length, 1, 'Never auto-replay upgrade');
 });

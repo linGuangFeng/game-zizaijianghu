@@ -1,11 +1,11 @@
 {
   "projectComplete": false,
-  "activeWork": "上勾拳详情布局同轮QA收口，独立13/13和五当前hash核同；本轮提交推送",
+  "activeWork": "材料弹层实现与独立26项验收收口，四hash核同；开发报告一次完整127项通过，本轮提交推送",
   "lastFailure": "九品QA模型容量失败已即时通知监听；同代理单次恢复实际读取/看图后独立20/20成功，保留原错误，非网络或测试失败。",
   "userPaused": false,
-  "nextAction": "材料信息弹层：event6材料补证与原图已核；读取现growth.material名称数量，null显示未确认，来源藏经阁只文字。支持空白处关闭及本地无障碍关闭，不加前往/授予/API；读写开始关闭防旧数据，具体先核调用再实施及逻辑回归。",
+  "nextAction": "初入江湖阅历不足说明候选：client已看不足/资源提示并核trainRealm不足分支；主已读realm-equipment-evidence资源不足节，下一轮先核触发证据与GET调用，读取真实amount后只读说明来源，不补资源产量/前往/充值或样本专属任务门槛。",
   "status": "HANDOFF_READY",
-  "updatedAt": "2026-10-14T07:46:25.1082359Z",
+  "updatedAt": "2026-10-14T07:56:13.7566025Z",
   "agents": [
     {
       "state": "COMPLETE",

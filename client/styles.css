@@ -304,3 +304,14 @@ dd { margin: 0; overflow-wrap: anywhere; }
 .asset-summary .retry-assets { width: 100%; }
 .is-jianghu .jianghu-continue { position: absolute; z-index: 2; top: 18%; right: 3%; width: 38%; display: grid; gap: 8px; }
 .is-jianghu .jianghu-continue button { width: 100%; margin: 0; min-height: 44px; padding: 8px 5px; font-size: 13px; background: #f1f4e9ed; border: 1px solid #899786; }
+#player-martial-detail #player-martial-material { width: 100%; margin: 28px 0 6px; padding: 10px; border-inline: 0; background: #c6b998; font-size: 12px; }
+#player-material-overlay { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 20px; border: 0; background: transparent; color: #514d3e; }
+#player-material-overlay[open] { display: grid; place-items: center; }
+#player-material-overlay::backdrop { background: #0009; }
+#player-material-overlay .player-material-sheet { width: min(100%, 372px); min-height: 330px; padding: 18px; border: 5px double #8eaaa0; background: #d2cec0; box-shadow: 0 0 0 3px #8a7d5e; }
+#player-material-title { margin: 0 0 12px; font: 22px serif; color: #4e956a; }
+#player-material-quantity { margin: 0; padding-bottom: 14px; border-bottom: 1px solid #a49d87; }
+#player-material-overlay .player-material-source { margin-top: 30px; padding: 14px; border: 3px double #afa98f; background: #dcd8c8; }
+#player-material-overlay .player-material-source h3 { margin: 0 0 8px; font: 18px serif; }
+#player-material-overlay .player-material-source p { margin: 0; font-size: 13px; color: #817962; }
+#close-player-material { display: block; margin: 30px auto 0; color: #5a5441; background: #e5dec8; border-color: #a9a087; }

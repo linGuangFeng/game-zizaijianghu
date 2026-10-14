@@ -145,7 +145,7 @@
       <h2 id="player-martial-title">上勾拳 · 武学养成</h2>
       <div class="player-martial-preview" aria-hidden="true"></div>
       <dl id="player-martial-facts"></dl>
-      <p id="player-martial-material"></p>
+      <button id="player-martial-material" type="button" aria-haspopup="dialog" aria-controls="player-material-overlay" disabled></button>
       <p class="reference-note">材料来源：藏经阁</p>
       <p id="player-martial-limit" class="reference-note"></p>
       <button id="upgrade-martial" class="primary" type="button" disabled>升级</button>
@@ -170,6 +170,13 @@
       <button id="back-martial-list" class="secondary" type="button">返回图鉴</button>
     </section>
     <button id="retry-button" class="secondary" type="button" hidden>重新读取</button>
+    <dialog id="player-material-overlay" aria-labelledby="player-material-title" hidden>
+      <div class="player-material-sheet">
+        <h2 id="player-material-title"></h2><p id="player-material-quantity"></p>
+        <div class="player-material-source"><h3>藏经阁</h3><p>前往藏经阁获得</p></div>
+        <button id="close-player-material" class="secondary" type="button">关闭材料说明</button>
+      </div>
+    </dialog>
   </main>
 </body>
 </html>

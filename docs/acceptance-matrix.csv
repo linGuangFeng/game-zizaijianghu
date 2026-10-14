@@ -48,3 +48,4 @@ LOCAL-MARTIAL-THREE,local-function,显式三本中槽卸下补回,既有checkpoi
 "LOCAL-NINTH-VISUAL","visual","九品三阶段布局进度","九品三原图及真实progress字段","HTTP+VM20项与四hash核同","NOT_RUN：无页面点击","PARTIAL_VERIFIED","三重边界已验逻辑，素材与页面仍缺","docs/ninth-visual-qa.md"
 "LOCAL-COMMERCE-VISUAL","visual","首日商品权益购买布局","first-offer-stable原图及真实商品投影","17项HTTP/CLI与五hash核同","NOT_RUN：无页面点击","PARTIAL_VERIFIED","仅首日测试支付，原宣传素材与三日页未恢复","docs/commerce-visual-qa.md"
 "LOCAL-UPPERCUT-VISUAL","visual","玩家上勾拳等级属性材料布局","升级前后及材料原图","13项HTTP与五hash核同","NOT_RUN：无页面点击","PARTIAL_VERIFIED","缺预览素材/原遮罩，不扩后续升级","docs/uppercut-visual-qa.md"
+"LOCAL-MATERIAL-TOOLTIP","interaction","材料查看关闭与未知结果锁","材料tooltip原图及growth真实数量","独立26项与四hash核同，开发全量127项","NOT_RUN：原生模态与页面点击未验","PARTIAL_VERIFIED","辅助关闭为本地无障碍功能，无来源跳转","docs/material-tooltip-qa.md"

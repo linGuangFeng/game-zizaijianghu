@@ -15,6 +15,11 @@ function status(message, error = false) {
 }
 
 function showPanel(id) {
+  if (id !== 'player-martial-detail') {
+    closePlayerMaterial();
+    byId('player-martial-material').disabled = true;
+    byId('player-martial-material').textContent = '材料信息待重新读取';
+  }
   if (id !== 'martial-list' && !byId('martial-list').hidden) ++catalogRequest;
   document.querySelector('.game-shell').classList.toggle('is-jianghu', id === 'jianghu-panel');
   byId('portrait-area').hidden = id === 'martial-list' || id === 'martial-detail' || id === 'equipment-panel' || id === 'jianghu-panel' || id === 'realm-panel' || id === 'gear-panel' || id === 'breakthrough-panel' || id === 'player-martial-detail' || id === 'ninth-training-panel' || id === 'commerce-panel';
@@ -315,6 +320,9 @@ async function readCheckpoint() {
   byId('open-equipment').hidden = true;
   const request = ++checkpointRequest;
   martialGrowthReady = false;
+  closePlayerMaterial();
+  byId('player-martial-material').disabled = true;
+  byId('player-martial-material').textContent = '材料信息待重新读取';
   byId('upgrade-martial').disabled = true;
   byId('retry-player-martial').hidden = true;
   byId('retry-checkpoint').hidden = true;
@@ -379,6 +387,9 @@ byId('auto-equip').addEventListener('click', async () => {
   if (equipping || !martialGrowthReady) return;
   equipping = true;
   martialGrowthReady = false;
+  closePlayerMaterial();
+  byId('player-martial-material').disabled = true;
+  byId('player-martial-material').textContent = '材料信息待重新读取';
   byId('upgrade-martial').disabled = true;
   ++checkpointRequest;
   byId('auto-equip').disabled = true;
@@ -415,6 +426,9 @@ async function unequipMartial(position) {
   if (equipping || !martialGrowthReady) return;
   equipping = true;
   martialGrowthReady = false;
+  closePlayerMaterial();
+  byId('player-martial-material').disabled = true;
+  byId('player-martial-material').textContent = '材料信息待重新读取';
   byId('upgrade-martial').disabled = true;
   ++checkpointRequest;
   byId('auto-equip').disabled = true;
@@ -451,6 +465,9 @@ async function equipMartialSkill(skillId) {
   if (equipping || !martialGrowthReady) return;
   equipping = true;
   martialGrowthReady = false;
+  closePlayerMaterial();
+  byId('player-martial-material').disabled = true;
+  byId('player-martial-material').textContent = '材料信息待重新读取';
   byId('upgrade-martial').disabled = true;
   ++checkpointRequest;
   byId('auto-equip').disabled = true;
@@ -944,9 +961,36 @@ byId('retry-breakthrough').addEventListener('click', readBreakthrough);
 byId('retry-breakthrough-entry').addEventListener('click', readBreakthrough);
 byId('back-breakthrough').addEventListener('click', showRealmProfile);
 
+function closePlayerMaterial(restoreFocus = false) {
+  const overlay = byId('player-material-overlay');
+  if (overlay.open) overlay.close();
+  overlay.hidden = true;
+  byId('player-material-title').textContent = '';
+  byId('player-material-quantity').textContent = '';
+  if (restoreFocus && martialGrowthReady && !equipping && !byId('player-martial-detail').hidden && !byId('player-martial-material').disabled) byId('player-martial-material').focus();
+}
+
+byId('player-martial-material').addEventListener('click', () => {
+  const growth = equipmentState?.growth?.uppercut;
+  if (!martialGrowthReady || equipping || !growth) return;
+  byId('player-material-title').textContent = growth.material.name;
+  byId('player-material-quantity').textContent = growth.material.quantity === null ? '数量未确认' : `数量：${growth.material.quantity}`;
+  const overlay = byId('player-material-overlay');
+  overlay.hidden = false;
+  overlay.showModal();
+});
+byId('close-player-material').addEventListener('click', () => closePlayerMaterial(true));
+byId('player-material-overlay').addEventListener('click', (event) => {
+  if (event.target === event.currentTarget) closePlayerMaterial(true);
+});
+byId('player-material-overlay').addEventListener('cancel', (event) => {
+  event.preventDefault();
+  closePlayerMaterial(true);
+});
 function displayPlayerMartial() {
   const growth = equipmentState?.growth?.uppercut;
   byId('player-martial-facts').replaceChildren();
+  byId('player-martial-material').disabled = !growth || !martialGrowthReady || equipping || byId('player-martial-detail').hidden;
   if (!growth) {
     byId('upgrade-martial').disabled = true;
     byId('player-martial-material').textContent = '';
@@ -958,7 +1002,7 @@ function displayPlayerMartial() {
     ['防御', growth.attributes.defense], ['气血', growth.attributes.health],
   ]) addFact(byId('player-martial-facts'), label, value);
   const quantity = growth.material.quantity;
-  byId('player-martial-material').textContent = `${growth.material.name}材料：${quantity === null ? '数量未确认' : quantity}；升级消耗 ${growth.upgrade.cost}`;
+  byId('player-martial-material').textContent = !martialGrowthReady ? '材料信息待重新读取' : `${growth.material.name}材料：${quantity === null ? '数量未确认' : quantity}；升级消耗 ${growth.upgrade.cost}`;
   byId('player-martial-limit').textContent = !growth.upgrade.supported ? '后续升级暂未开放' : quantity === null ? '材料数量确认后可升级' : quantity < growth.upgrade.cost ? '上勾拳材料不足' : `可升级至 ${growth.upgrade.targetLevel} 级`;
   byId('upgrade-martial').disabled = equipping || !martialGrowthReady || !growth.upgrade.supported || quantity === null || quantity < growth.upgrade.cost;
 }
@@ -983,6 +1027,9 @@ byId('upgrade-martial').addEventListener('click', async () => {
   equipping = true;
   markAssetsPending();
   martialGrowthReady = false;
+  closePlayerMaterial();
+  byId('player-martial-material').disabled = true;
+  byId('player-martial-material').textContent = '材料信息待重新读取';
   ++checkpointRequest;
   byId('upgrade-martial').disabled = true;
   byId('back-player-martial').disabled = true;
